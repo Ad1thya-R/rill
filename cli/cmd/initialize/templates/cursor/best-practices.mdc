@@ -1,0 +1,45 @@
+---
+description: Best Practices
+globs:
+alwaysApply: false
+---
+# Best Practices
+
+This file contains recommended high-level practices for creating Cursor rules and building Rill projects. These are suggestions intended to keep projects maintainable, secure, and performant.
+
+## Data Modeling
+
+- Keep models small, single-responsibility and easy to test.
+- Prefer composing models with well-named intermediate steps rather than one large query.
+- Use clear and explicit column names; avoid ambiguous or generic names.
+- Version your models by keeping separate files or clear comments when breaking backwards compatibility.
+
+## Security & Secrets
+
+- Never commit sensitive credentials or tokens to the repository. Use environment variables (e.g. `.env` or `rill env`), secret stores, or CI secrets instead.
+
+## Testing & CI
+
+- Add lightweight unit tests for models and data quality tests for critical pipelines.
+- Run quick smoke tests in pull requests to catch regressions early.
+- Validate schema changes and backward compatibility in CI before deploying.
+
+## Performance & Scale
+
+- Sample large upstream sources for local development — do not run full production workloads locally.
+- Partition and aggregate early where appropriate; push filtering down to the source if supported.
+- Use materialization judiciously for expensive or frequently queried intermediate steps.
+
+## Project Hygiene
+
+- Keep a clear project structure (see Project Structure rule) and consistent naming conventions.
+- Add a brief README or developer notes for non-obvious modeling decisions.
+
+## Observability & Alerts
+
+- Instrument critical pipelines with metrics and health checks where possible.
+- Add alerts on job failures, latency spikes, or unexpectedly large data deltas.
+
+## When in Doubt
+
+- Prefer clarity and correctness over cleverness. A slightly slower, well-tested model is safer than an optimized one that's hard to maintain.

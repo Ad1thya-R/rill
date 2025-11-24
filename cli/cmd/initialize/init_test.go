@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddCursorRules_Table(t *testing.T) {
+func TestAddCursorRules(t *testing.T) {
 	tcs := []struct {
 		name          string
 		force         bool

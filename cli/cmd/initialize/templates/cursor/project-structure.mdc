@@ -1,0 +1,53 @@
+---
+description: Project Structure
+globs:
+alwaysApply: false
+---
+
+This rule describes a recommended, minimal Rill project layout to help teams stay organized and make automation predictable.
+
+## Recommended top-level layout
+
+- apis/ — API definitions
+- sources/ — source declarations and ingestion configs (e.g. CSV, S3, Snowflake, etc.)
+- models/ — SQL models and modular transformations
+- metrics/ — metrics/definition files or metrics views
+- dashboards/ — dashboard definitions and assets
+- connectors/ — external connector code and config
+- rill.yaml — project configuration
+- .env — local environment values (not checked into git)
+
+## Organizing models
+
+- Group models by domain where useful (e.g. `models/sales/`, `models/customers/`).
+- Use an index or README in a nested folder to explain domain-specific decisions.
+
+## Example structure
+
+```
+.gitignore
+rill.yaml
+apis/
+	api.yaml
+connectors/
+	clickhouse.yaml
+sources/
+	auction_data_raw.yaml
+	bids_data_raw.yaml
+models/
+	auction.yaml
+	bids.yaml
+    users.sql
+metrics/
+	auction_metrics.yaml
+	bids_metrics.yaml
+dashboards/
+	auction_metrics_explore.yaml
+	bids_metrics_explore.yaml
+	bids_canvas.yaml
+```
+
+## Notes
+
+- Keep unrelated artifacts out of the repo root when possible; store infra/ops configs in a clear place.
+- Keep developer-facing docs short and local (README in folders) so new contributors can ramp up quickly.

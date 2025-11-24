@@ -1,0 +1,42 @@
+---
+description: Code Style
+globs:
+alwaysApply: false
+---
+# Code Style
+
+This rule documents recommended code style conventions for Rill projects. The goal is readable, reviewable, and consistent SQL and project files.
+
+## Naming conventions
+
+- Use clear, descriptive names for models, sources, and metrics (e.g. `orders_daily`, `customer_dim`).
+- Use snake_case for files and identifiers to match repository conventions.
+- Prefer names that reflect content and grain (e.g. `events_hourly`, `transactions_raw`).
+
+## SQL Style
+
+- Use UPPERCASE for SQL keywords (SELECT, FROM, WHERE, JOIN) and lowercase for identifiers where helpful.
+- Avoid SELECT * except in early exploration; prefer explicit column lists for production models.
+- Use explicit JOINs with ON clauses; prefer INNER JOIN over comma joins.
+- Break long SELECT lists into one column per line for readability.
+
+## YAML & Config Style
+
+- Use consistent indentation (2 spaces) in YAML files.
+- Group related configurations together and add comments for clarity.
+
+## Comments & Documentation
+
+- Include a short header comment at the top of model files describing purpose, inputs and outputs.
+- Document non-obvious transformations with inline comments.
+
+## Formatting & Linters
+
+- Keep line lengths reasonable (wrap at ~100 characters) to help code review.
+
+### Example header for a model file
+
+--
+-- models/orders_daily.sql
+-- Purpose: aggregate orders into a daily grain used by downstream metrics
+--
