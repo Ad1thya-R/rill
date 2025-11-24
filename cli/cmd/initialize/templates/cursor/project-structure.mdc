@@ -1,53 +1,93 @@
 ---
-description: Project Structure
+description: Rill Project Structure
 globs:
 alwaysApply: false
 ---
+# Rill Project Structure
 
-This rule describes a recommended, minimal Rill project layout to help teams stay organized and make automation predictable.
+## Standard Layout
 
-## Recommended top-level layout
-
-- apis/ — API definitions
-- sources/ — source declarations and ingestion configs (e.g. CSV, S3, Snowflake, etc.)
-- models/ — SQL models and modular transformations
-- metrics/ — metrics/definition files or metrics views
-- dashboards/ — dashboard definitions and assets
-- connectors/ — external connector code and config
-- rill.yaml — project configuration
-- .env — local environment values (not checked into git)
-
-## Organizing models
-
-- Group models by domain where useful (e.g. `models/sales/`, `models/customers/`).
-- Use an index or README in a nested folder to explain domain-specific decisions.
-
-## Example structure
+Rill projects organize resources by type:
 
 ```
-.gitignore
-rill.yaml
-apis/
-	api.yaml
-connectors/
-	clickhouse.yaml
+rill.yaml          # Project configuration
+.env               # Local secrets (git-ignored)
+sources/           # Data source connections
+models/            # SQL transformations
+metrics/           # Metrics views (semantic layer)
+dashboards/        # Dashboard definitions
+connectors/        # External connector configs
+apis/              # API definitions
+```
+
+## File Organization
+
+**Sources**: Connection definitions to external data
+```
 sources/
-	auction_data_raw.yaml
-	bids_data_raw.yaml
-models/
-	auction.yaml
-	bids.yaml
-    users.sql
-metrics/
-	auction_metrics.yaml
-	bids_metrics.yaml
-dashboards/
-	auction_metrics_explore.yaml
-	bids_metrics_explore.yaml
-	bids_canvas.yaml
+  orders_raw.yaml          # S3/database source
+  events_raw.yaml
 ```
 
-## Notes
+**Models**: SQL that transforms data
+```
+models/
+  orders_daily.sql         # Daily aggregation
+  customer_dim.sql         # Dimension table
+  sales/                   # Domain grouping
+    revenue_summary.sql
+```
 
-- Keep unrelated artifacts out of the repo root when possible; store infra/ops configs in a clear place.
-- Keep developer-facing docs short and local (README in folders) so new contributors can ramp up quickly.
+**Metrics**: Business metrics and dimensions
+```
+metrics/
+  orders_metrics.yaml      # Matches orders_daily model
+  customer_metrics.yaml
+```
+
+## Complete Example
+
+Typical e-commerce analytics project:
+
+```
+rill.yaml
+.env
+sources/
+  transactions_raw.yaml
+  customers_raw.yaml
+models/
+  transactions_daily.sql
+  customer_dim.sql
+metrics/
+  transactions_metrics.yaml
+  customer_metrics.yaml
+dashboards/
+  sales_overview.yaml
+connectors/
+  snowflake.yaml
+```
+
+**File naming**: Match metrics to their source model
+- `models/orders_daily.sql` → `metrics/orders_metrics.yaml`
+- `models/user_events.sql` → `metrics/user_events_metrics.yaml`
+
+## Domain Organization
+
+For larger projects, group by domain:
+
+```
+models/
+  sales/
+    README.md              # Domain context
+    orders_daily.sql
+    revenue_summary.sql
+  marketing/
+    campaign_performance.sql
+    attribution.sql
+```
+
+## Best Practices
+
+- Place infra configs (Docker, CI) in dedicated folders, not project root
+- Add domain README files to explain business logic
+- Keep one metrics view per model unless multiple perspectives are needed

@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed templates/**/*.md
+//go:embed templates/**/*.mdc
 var templateFS embed.FS
 
 func InitCmd(ch *cmdutil.Helper) *cobra.Command {

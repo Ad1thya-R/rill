@@ -1,45 +1,60 @@
 ---
-description: Best Practices
+description: Best Practices for Rill Development
 globs:
 alwaysApply: false
 ---
-# Best Practices
+# Rill Development Best Practices
 
-This file contains recommended high-level practices for creating Cursor rules and building Rill projects. These are suggestions intended to keep projects maintainable, secure, and performant.
+## Core Concepts
 
-## Data Modeling
+Rill is a "business intelligence as code" platform. Key resource types:
+- **Models**: SQL that produces a table (DuckDB or Clickhouse)
+- **Metrics views**: Queryable dimensions and measures based on a single model
+- **Dashboard**: A metrics view (Rill auto-generates the UI)
 
-- Keep models small, single-responsibility and easy to test.
-- Prefer composing models with well-named intermediate steps rather than one large query.
-- Use clear and explicit column names; avoid ambiguous or generic names.
-- Version your models by keeping separate files or clear comments when breaking backwards compatibility.
+Resource dependency: Metrics views → Models. Multiple metrics views can use one model.
 
-## Security & Secrets
+## Development Approach
 
-- Never commit sensitive credentials or tokens to the repository. Use environment variables (e.g. `.env` or `rill env`), secret stores, or CI secrets instead.
+- Reuse existing models when possible before creating new ones
+- Make minimal changes to address requests
+- One metrics view per model unless there's a clear reason for multiple
+- Review existing project resources before making changes
 
-## Testing & CI
+## Security
 
-- Add lightweight unit tests for models and data quality tests for critical pipelines.
-- Run quick smoke tests in pull requests to catch regressions early.
-- Validate schema changes and backward compatibility in CI before deploying.
+- Store credentials in environment variables (`.env` or `rill env`), never commit them
+- Use secret stores or CI secrets for production credentials
 
-## Performance & Scale
+## Performance
 
-- Sample large upstream sources for local development — do not run full production workloads locally.
-- Partition and aggregate early where appropriate; push filtering down to the source if supported.
-- Use materialization judiciously for expensive or frequently queried intermediate steps.
+- Sample large sources for local development
+- Push filters down to the source when supported
+- Materialize expensive or frequently queried transformations
+- Aggregate early in the pipeline
 
-## Project Hygiene
+**Example**: Instead of querying 1B raw events locally:
+```sql
+-- models/events_sample.sql
+SELECT * FROM read_parquet('s3://events/*.parquet')
+LIMIT 100000  -- Sample for local dev
+```
 
-- Keep a clear project structure (see Project Structure rule) and consistent naming conventions.
-- Add a brief README or developer notes for non-obvious modeling decisions.
+## Data Quality
 
-## Observability & Alerts
+- Add tests for critical pipelines (see models with `tests:` blocks)
+- Validate schema changes before deploying
+- Document non-obvious transformations
 
-- Instrument critical pipelines with metrics and health checks where possible.
-- Add alerts on job failures, latency spikes, or unexpectedly large data deltas.
+**Example test in model YAML**:
+```yaml
+tests:
+  - name: no_null_ids
+    expression: user_id IS NOT NULL
+```
 
-## When in Doubt
+## Code Clarity
 
-- Prefer clarity and correctness over cleverness. A slightly slower, well-tested model is safer than an optimized one that's hard to maintain.
+- Prefer clear, maintainable code over micro-optimizations
+- Add comments for complex business logic
+- Use descriptive names (see code-style.mdc)

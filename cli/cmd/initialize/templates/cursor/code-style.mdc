@@ -1,42 +1,78 @@
 ---
-description: Code Style
+description: Code Style for Rill Projects
 globs:
 alwaysApply: false
 ---
-# Code Style
+# Rill Code Style
 
-This rule documents recommended code style conventions for Rill projects. The goal is readable, reviewable, and consistent SQL and project files.
+## Naming Conventions
 
-## Naming conventions
+- Use snake_case for all files and identifiers
+- Include grain in time-based model names: `events_hourly`, `orders_daily`
+- Suffix dimension tables with `_dim`: `customer_dim`, `product_dim`
+- Suffix raw/staging with `_raw` or `_stg`: `transactions_raw`
 
-- Use clear, descriptive names for models, sources, and metrics (e.g. `orders_daily`, `customer_dim`).
-- Use snake_case for files and identifiers to match repository conventions.
-- Prefer names that reflect content and grain (e.g. `events_hourly`, `transactions_raw`).
+**Examples**:
+```
+models/orders_daily.sql       ✓ Clear grain
+models/OrdersDaily.sql        ✗ Wrong case
+models/orders.sql             ~ Missing grain context
+```
 
 ## SQL Style
 
-- Use UPPERCASE for SQL keywords (SELECT, FROM, WHERE, JOIN) and lowercase for identifiers where helpful.
-- Avoid SELECT * except in early exploration; prefer explicit column lists for production models.
-- Use explicit JOINs with ON clauses; prefer INNER JOIN over comma joins.
-- Break long SELECT lists into one column per line for readability.
+**Keywords**: UPPERCASE for SQL keywords
+**Columns**: One per line in SELECT, explicit lists (no SELECT *)
+**Joins**: Always use explicit JOIN with ON clause
+**Line length**: ~100 characters max
 
-## YAML & Config Style
-
-- Use consistent indentation (2 spaces) in YAML files.
-- Group related configurations together and add comments for clarity.
-
-## Comments & Documentation
-
-- Include a short header comment at the top of model files describing purpose, inputs and outputs.
-- Document non-obvious transformations with inline comments.
-
-## Formatting & Linters
-
-- Keep line lengths reasonable (wrap at ~100 characters) to help code review.
-
-### Example header for a model file
-
---
+**Example**:
+```sql
 -- models/orders_daily.sql
--- Purpose: aggregate orders into a daily grain used by downstream metrics
---
+-- Aggregates orders to daily grain for metrics
+
+SELECT
+  DATE_TRUNC('day', order_timestamp) AS order_date,
+  customer_id,
+  COUNT(*) AS order_count,
+  SUM(total_amount) AS total_revenue
+FROM {{ ref('orders_raw') }}
+WHERE order_status = 'completed'
+GROUP BY 1, 2
+```
+
+**Anti-pattern**:
+```sql
+-- ✗ Avoid
+SELECT * FROM orders, customers WHERE orders.customer_id = customers.id
+```
+
+## YAML Style
+
+- 2-space indentation
+- Group related fields together
+- Add comments for non-obvious config
+
+**Example**:
+```yaml
+type: metrics_view
+model: orders_daily
+
+timeseries: order_date
+
+dimensions:
+  - name: customer_id
+    label: Customer ID
+    description: Unique customer identifier
+
+measures:
+  - name: total_revenue
+    expression: SUM(total_revenue)
+    format_preset: currency_usd
+```
+
+## Documentation
+
+- Add header comment to SQL models explaining purpose
+- Document complex transformations inline
+- Keep comments concise and up-to-date
