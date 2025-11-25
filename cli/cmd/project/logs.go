@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -42,8 +43,8 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-				OrganizationName: ch.Org,
-				Name:             name,
+				Org:     ch.Org,
+				Project: name,
 			})
 			if err != nil {
 				return err
@@ -54,8 +55,8 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("project %q is not currently deployed", name)
 			}
 
-			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-				ch.PrintfWarn("Deployment status not OK: %s\n", depl.Status.String())
+			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING {
+				ch.PrintfWarn("Deployment status not RUNNING: %s\n", depl.Status.String())
 				return nil
 			}
 
@@ -101,7 +102,9 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return context.Cause(ctx)
 			}
 
-			res, err := rt.GetLogs(cmd.Context(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
+			res, err := rt.GetLogs(cmd.Context(),
+				&runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl},
+				grpc.MaxCallRecvMsgSize(17*1024*1024)) // setting grpc received message size to 16MB(default max logbuffer size)+1MB(buffer).
 			if err != nil {
 				return fmt.Errorf("failed to get logs: %w", err)
 			}

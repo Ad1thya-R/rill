@@ -11,9 +11,9 @@
       switch (query.state.data?.prodDeployment?.status) {
         case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
           return PollTimeWhenProjectDeploymentPending;
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR:
+        case V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED:
           return PollTimeWhenProjectDeploymentError;
-        case V1DeploymentStatus.DEPLOYMENT_STATUS_OK:
+        case V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING:
           return PollTimeWhenProjectDeploymentOk;
         default:
           return false;
@@ -37,6 +37,7 @@
   } from "@rilldata/web-admin/client";
   import {
     isProjectPage,
+    isPublicAlertPage,
     isPublicReportPage,
     isPublicURLPage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -63,7 +64,9 @@
 
   $: onProjectPage = isProjectPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
-  $: if ($page.url.searchParams.has("token") && isPublicReportPage($page)) {
+  $: onPublicReportOrAlertPage =
+    isPublicReportPage($page) || isPublicAlertPage($page);
+  $: if (onPublicReportOrAlertPage) {
     token = $page.url.searchParams.get("token");
   }
 
@@ -140,7 +143,7 @@
   }
 </script>
 
-{#if onProjectPage && projectData?.prodDeployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
+{#if onProjectPage && projectData?.prodDeployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
   <ProjectTabs
     projectPermissions={projectData.projectPermissions}
     {organization}
@@ -161,7 +164,7 @@
     <RedeployProjectCta {organization} {project} />
   {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
     <ProjectBuilding />
-  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR}
+  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERRORED}
     <ErrorPage
       statusCode={500}
       header="Deployment Error"
@@ -169,7 +172,7 @@
         ? projectData.prodDeployment.statusMessage
         : "There was an error deploying your project. Please contact support."}
     />
-  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
+  {:else if projectData.prodDeployment.status === V1DeploymentStatus.DEPLOYMENT_STATUS_RUNNING}
     <RuntimeProvider
       instanceId={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.instanceId

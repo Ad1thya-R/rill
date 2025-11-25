@@ -31,6 +31,7 @@ import type {
   QueryServiceExportBody,
   QueryServiceExportReportBody,
   QueryServiceMetricsViewAggregationBody,
+  QueryServiceMetricsViewAnnotationsBody,
   QueryServiceMetricsViewComparisonBody,
   QueryServiceMetricsViewRowsBody,
   QueryServiceMetricsViewSchemaParams,
@@ -62,6 +63,7 @@ import type {
   V1ExportReportResponse,
   V1ExportResponse,
   V1MetricsViewAggregationResponse,
+  V1MetricsViewAnnotationsResponse,
   V1MetricsViewComparisonResponse,
   V1MetricsViewRowsResponse,
   V1MetricsViewSchemaResponse,
@@ -896,6 +898,123 @@ export function createQueryServiceMetricsViewAggregation<
   return query;
 }
 
+export const queryServiceMetricsViewAnnotations = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1MetricsViewAnnotationsResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/annotations`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewAnnotationsBody,
+    signal,
+  });
+};
+
+export const getQueryServiceMetricsViewAnnotationsQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
+) => {
+  return [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/annotations`,
+    queryServiceMetricsViewAnnotationsBody,
+  ] as const;
+};
+
+export const getQueryServiceMetricsViewAnnotationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewAnnotationsQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewAnnotationsBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>
+  > = ({ signal }) =>
+    queryServiceMetricsViewAnnotations(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewAnnotationsBody,
+      signal,
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QueryServiceMetricsViewAnnotationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>
+>;
+export type QueryServiceMetricsViewAnnotationsQueryError = ErrorType<RpcStatus>;
+
+export function createQueryServiceMetricsViewAnnotations<
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewAnnotationsBody: QueryServiceMetricsViewAnnotationsBody,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof queryServiceMetricsViewAnnotations>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQueryServiceMetricsViewAnnotationsQueryOptions(
+    instanceId,
+    metricsViewName,
+    queryServiceMetricsViewAnnotationsBody,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * ie. comparsion toplist:
 | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
@@ -1415,7 +1534,8 @@ export function createQueryServiceMetricsViewSearch<
 }
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 export const queryServiceMetricsViewTimeRange = (
   instanceId: string,
@@ -1498,7 +1618,8 @@ export type QueryServiceMetricsViewTimeRangeQueryResult = NonNullable<
 export type QueryServiceMetricsViewTimeRangeQueryError = ErrorType<RpcStatus>;
 
 /**
- * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+Deprecated: use MetricsViewTimeRanges instead.
  */
 
 export function createQueryServiceMetricsViewTimeRange<
@@ -1538,6 +1659,9 @@ export function createQueryServiceMetricsViewTimeRange<
   return query;
 }
 
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 export const queryServiceMetricsViewTimeRanges = (
   instanceId: string,
   metricsViewName: string,
@@ -1617,6 +1741,10 @@ export type QueryServiceMetricsViewTimeRangesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>
 >;
 export type QueryServiceMetricsViewTimeRangesQueryError = ErrorType<RpcStatus>;
+
+/**
+ * @summary MetricsViewTimeRanges resolves time ranges for a metrics view.
+ */
 
 export function createQueryServiceMetricsViewTimeRanges<
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRanges>>,

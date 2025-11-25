@@ -1,12 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
+  import CanvasBookmarks from "@rilldata/web-admin/features/bookmarks/CanvasBookmarks.svelte";
+  import ExploreBookmarks from "@rilldata/web-admin/features/bookmarks/ExploreBookmarks.svelte";
   import ShareDashboardPopover from "@rilldata/web-admin/features/dashboards/share/ShareDashboardPopover.svelte";
   import ShareProjectPopover from "@rilldata/web-admin/features/projects/user-management/ShareProjectPopover.svelte";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
-  import ChatToggle from "@rilldata/web-common/features/chat/ChatToggle.svelte";
+  import ChatToggle from "@rilldata/web-common/features/chat/layouts/sidebar/ChatToggle.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "@rilldata/web-common/features/explores/selectors";
@@ -25,10 +26,11 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import { useDashboardsV2 } from "../dashboards/listing/selectors";
+  import { useDashboards } from "../dashboards/listing/selectors";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import {
+    isCanvasDashboardPage,
     isMetricsExplorerPage,
     isOrganizationPage,
     isProjectPage,
@@ -40,11 +42,12 @@
   export let manageProjectMembers: boolean;
   export let manageOrgAdmins: boolean;
   export let manageOrgMembers: boolean;
+  export let readProjects: boolean;
   export let organizationLogoUrl: string | undefined = undefined;
   export let planDisplayName: string | undefined;
 
   const user = createAdminServiceGetCurrentUser();
-  const { alerts: alertsFlag, dimensionSearch, chat } = featureFlags;
+  const { alerts: alertsFlag, dimensionSearch, dashboardChat } = featureFlags;
 
   $: ({ instanceId } = $runtime);
 
@@ -57,6 +60,7 @@
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
+  $: onCanvasDashboardPage = isCanvasDashboardPage($page);
   $: onPublicURLPage = isPublicURLPage($page);
   $: onOrgPage = isOrganizationPage($page);
 
@@ -81,14 +85,14 @@
     },
     {
       query: {
-        enabled: !!organization,
+        enabled: !!organization && readProjects,
         retry: 2,
         refetchOnMount: true,
       },
     },
   );
 
-  $: visualizationsQuery = useDashboardsV2(instanceId);
+  $: visualizationsQuery = useDashboards(instanceId);
 
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
@@ -137,7 +141,7 @@
     new Map<string, PathOption>(),
   );
 
-  $: visualizationPaths = visualizations.reduce((map, { resource }) => {
+  $: visualizationPaths = visualizations.reduce((map, resource) => {
     const name = resource.meta.name.name;
     const isMetricsExplorer = !!resource?.explore;
     return map.set(name.toLowerCase(), {
@@ -173,7 +177,7 @@
   ];
 
   $: exploreQuery = useExplore(instanceId, dashboard, {
-    enabled: !!instanceId && !!dashboard,
+    enabled: !!instanceId && !!dashboard && !!onMetricsExplorerPage,
   });
   $: exploreSpec = $exploreQuery.data?.explore?.explore?.state?.validSpec;
   $: isDashboardValid = !!exploreSpec;
@@ -235,11 +239,13 @@
             {#if $dimensionSearch}
               <GlobalDimensionSearch />
             {/if}
-            {#if $chat}
+            {#if $dashboardChat}
               <ChatToggle />
             {/if}
             {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
-              <Bookmarks
+              <ExploreBookmarks
+                {organization}
+                {project}
                 metricsViewName={exploreSpec.metricsView}
                 exploreName={dashboard}
               />
@@ -251,6 +257,11 @@
           </StateManagersProvider>
         {/key}
       {/if}
+    {/if}
+
+    {#if onCanvasDashboardPage}
+      <CanvasBookmarks {organization} {project} canvasName={dashboard} />
+      <ShareDashboardPopover createMagicAuthTokens={false} />
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

@@ -3,6 +3,7 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
@@ -14,11 +15,11 @@
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import Model from "../../../components/icons/Model.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
-  import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
+  import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { createModelFromTable } from "../../connectors/olap/createModel";
   import { getScreenNameFromPage } from "../../file-explorer/telemetry";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { createSqlModelFromTable } from "../../connectors/code-utils";
 
   const { ai } = featureFlags;
   const queryClient = useQueryClient();
@@ -31,8 +32,7 @@
 
   $: modelHasError = fileArtifact.getHasErrors(queryClient, instanceId);
   $: modelQuery = fileArtifact.getResource(queryClient, instanceId);
-  $: connector = ($modelQuery.data as V1Resource | undefined)?.model?.spec
-    ?.outputConnector;
+  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -43,7 +43,7 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
-      const [newModelPath, newModelName] = await createModelFromTable(
+      const [newModelPath, newModelName] = await createSqlModelFromTable(
         queryClient,
         connector as string,
         "",
@@ -135,3 +135,5 @@
     {/if}
   </svelte:fragment>
 </NavigationMenuItem>
+
+<NavigationMenuSeparator />

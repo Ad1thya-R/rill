@@ -1,3 +1,7 @@
+import {
+  parseRillTime,
+  validateRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
@@ -45,7 +49,7 @@ const PreviousCompleteRangeReverseMap: Record<string, TimeRangePreset> = {};
 for (const preset in PreviousCompleteRangeMap) {
   const range: V1TimeRange = PreviousCompleteRangeMap[preset];
   PreviousCompleteRangeReverseMap[
-    `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
+    `${range.isoDuration}_${range.isoOffset ?? ""}_${range.roundToGrain}`
   ] = preset as TimeRangePreset;
 }
 
@@ -55,6 +59,12 @@ export function mapSelectedTimeRangeToV1TimeRange(
   explore: V1ExploreSpec,
 ): V1TimeRange | undefined {
   if (!selectedTimeRange?.name) return undefined;
+  if (!validateRillTime(selectedTimeRange.name)) {
+    return {
+      expression: selectedTimeRange.name,
+      timeZone,
+    };
+  }
 
   const timeRange: V1TimeRange = {};
   switch (selectedTimeRange.name) {
@@ -96,15 +106,36 @@ export function mapSelectedComparisonTimeRangeToV1TimeRange(
     return undefined;
   }
 
+  let isoDuration = timeRange.isoDuration;
+  const name = selectedComparisonTimeRange.name;
+
+  if (
+    timeRange.expression &&
+    TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset
+  ) {
+    const rt = parseRillTime(timeRange.expression);
+    if (!rt.isOldFormat) {
+      return {
+        expression:
+          rt.toString() +
+          " offset " +
+          TIME_COMPARISON[selectedComparisonTimeRange.name]?.rillTimeOffset,
+      };
+    } else {
+      // Handle old syntax differently until we have the backend parser updated.
+      isoDuration = timeRange.expression;
+    }
+  }
+
   const comparisonTimeRange: V1TimeRange = {};
-  switch (selectedComparisonTimeRange.name) {
+  switch (name) {
     default:
       comparisonTimeRange.isoOffset = selectedComparisonTimeRange.name;
-      comparisonTimeRange.isoDuration = timeRange.isoDuration;
+      comparisonTimeRange.isoDuration = isoDuration;
       break;
     case TimeComparisonOption.CONTIGUOUS:
       comparisonTimeRange.isoOffset = comparisonTimeRange.isoDuration =
-        timeRange.isoDuration;
+        isoDuration;
       break;
 
     case TimeComparisonOption.CUSTOM:
@@ -135,6 +166,16 @@ export function mapV1TimeRangeToSelectedTimeRange(
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
+  } else if (timeRange.expression) {
+    try {
+      const rt = parseRillTime(timeRange.expression);
+      selectedTimeRange = {
+        name: rt.toString(),
+        interval: rt.byGrain ?? rt.rangeGrain,
+      } as DashboardTimeControls;
+    } catch {
+      return undefined;
+    }
   } else if (duration && timeRangeSummary.min) {
     selectedTimeRange = isoDurationToFullTimeRange(
       duration,
@@ -145,7 +186,9 @@ export function mapV1TimeRangeToSelectedTimeRange(
     return undefined;
   }
 
-  selectedTimeRange.interval = timeRange.roundToGrain;
+  if (!selectedTimeRange.interval) {
+    selectedTimeRange.interval = timeRange.roundToGrain;
+  }
 
   return selectedTimeRange;
 }

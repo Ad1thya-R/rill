@@ -1,5 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import type { ColorMapping } from "@rilldata/web-common/features/components/charts/types";
+  import { onDestroy } from "svelte";
   import {
     type SignalListeners,
     VegaLite,
@@ -19,18 +21,26 @@
   export let error: string | null = null;
   export let canvasDashboard = false;
   export let renderer: "canvas" | "svg" = "canvas";
+  export let themeMode: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
   export let tooltipFormatter: VLTooltipFormatter | undefined = undefined;
+  export let colorMapping: ColorMapping = [];
   export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
+  let tooltipHandler: VegaLiteTooltipHandler | null = null;
 
   $: width = contentRect.width;
   $: height = contentRect.height - 10;
 
   $: if (viewVL && tooltipFormatter) {
-    const handler = new VegaLiteTooltipHandler(tooltipFormatter);
-    viewVL.tooltip(handler.handleTooltip);
+    // Clean up previous handler if it exists
+    if (tooltipHandler) {
+      tooltipHandler.destroy();
+    }
+
+    tooltipHandler = new VegaLiteTooltipHandler(tooltipFormatter);
+    viewVL.tooltip(tooltipHandler.handleTooltip);
     void viewVL.runAsync();
   }
 
@@ -40,19 +50,41 @@
     height,
     config,
     renderer,
+    themeMode,
     expressionFunctions,
+    colorMapping,
   });
+
+  // Create a more efficient key for component remounting
+  $: configKey = config ? Object.keys(config).sort().join(",") : "default";
+  $: colorMappingKey =
+    colorMapping?.map((m) => `${m.value}:${m.color}`).join("|") ?? "";
+  $: componentKey = `${themeMode}-${configKey}-${colorMappingKey}`;
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
     error = e.detail.error.message;
   };
+
+  const handleMouseLeave = () => {
+    if (tooltipHandler) {
+      tooltipHandler.removeTooltip();
+    }
+  };
+
+  onDestroy(() => {
+    if (tooltipHandler) {
+      tooltipHandler.destroy();
+      tooltipHandler = null;
+    }
+  });
 </script>
 
 <div
   bind:contentRect
-  class:bg-surface={canvasDashboard}
+  role="presentation"
   class:px-2={canvasDashboard}
-  class="overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
+  class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
+  on:mouseleave={handleMouseLeave}
 >
   {#if error}
     <div
@@ -62,13 +94,15 @@
       {error}
     </div>
   {:else}
-    <VegaLite
-      {data}
-      {spec}
-      {signalListeners}
-      {options}
-      bind:view={viewVL}
-      on:onError={onError}
-    />
+    {#key componentKey}
+      <VegaLite
+        {data}
+        {spec}
+        {signalListeners}
+        {options}
+        bind:view={viewVL}
+        on:onError={onError}
+      />
+    {/key}
   {/if}
 </div>

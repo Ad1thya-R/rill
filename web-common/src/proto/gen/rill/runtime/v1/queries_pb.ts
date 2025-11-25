@@ -412,6 +412,13 @@ export class ExportRequest extends Message<ExportRequest> {
    */
   originUrl = "";
 
+  /**
+   * Optional Execution to attach to the underlying query. Used to resolve rill-time expressions.
+   *
+   * @generated from field: google.protobuf.Timestamp execution_time = 9;
+   */
+  executionTime?: Timestamp;
+
   constructor(data?: PartialMessage<ExportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -428,6 +435,7 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 6, name: "include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "origin_dashboard", kind: "message", T: ResourceName },
     { no: 8, name: "origin_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "execution_time", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {
@@ -3528,28 +3536,39 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
   metricsViewName = "";
 
   /**
+   * Optional time range expressions to resolve (uses the rilltime expression syntax).
+   *
    * @generated from field: repeated string expressions = 3;
    */
   expressions: string[] = [];
 
   /**
+   * Optional query priority.
+   *
    * @generated from field: int32 priority = 4;
    */
   priority = 0;
 
   /**
-   * Optional timezone param to easily override time-range expressions
+   * Optional time zone that overrides the time zones used when resolving the time range expressions.
    *
    * @generated from field: string time_zone = 5;
    */
   timeZone = "";
 
   /**
-   * Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+   * Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension.
    *
    * @generated from field: string time_dimension = 6;
    */
   timeDimension = "";
+
+  /**
+   * Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided.
+   *
+   * @generated from field: optional google.protobuf.Timestamp execution_time = 7;
+   */
+  executionTime?: Timestamp;
 
   constructor(data?: PartialMessage<MetricsViewTimeRangesRequest>) {
     super();
@@ -3565,6 +3584,7 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "execution_time", kind: "message", T: Timestamp, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesRequest {
@@ -3589,7 +3609,24 @@ export class MetricsViewTimeRangesRequest extends Message<MetricsViewTimeRangesR
  */
 export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRangesResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.TimeRange time_ranges = 1;
+   * The full time range summary for the requested time dimension.
+   *
+   * @generated from field: rill.runtime.v1.TimeRangeSummary full_time_range = 1;
+   */
+  fullTimeRange?: TimeRangeSummary;
+
+  /**
+   * The resolved time ranges for the requested rilltime expressions.
+   *
+   * @generated from field: repeated rill.runtime.v1.ResolvedTimeRange resolved_time_ranges = 3;
+   */
+  resolvedTimeRanges: ResolvedTimeRange[] = [];
+
+  /**
+   * The same values as resolved_time_ranges for backwards compatibility.
+   * Deprecated: use resolved_time_ranges instead.
+   *
+   * @generated from field: repeated rill.runtime.v1.TimeRange time_ranges = 2;
    */
   timeRanges: TimeRange[] = [];
 
@@ -3601,7 +3638,9 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
+    { no: 1, name: "full_time_range", kind: "message", T: TimeRangeSummary },
+    { no: 3, name: "resolved_time_ranges", kind: "message", T: ResolvedTimeRange, repeated: true },
+    { no: 2, name: "time_ranges", kind: "message", T: TimeRange, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangesResponse {
@@ -3618,6 +3657,294 @@ export class MetricsViewTimeRangesResponse extends Message<MetricsViewTimeRanges
 
   static equals(a: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined, b: MetricsViewTimeRangesResponse | PlainMessage<MetricsViewTimeRangesResponse> | undefined): boolean {
     return proto3.util.equals(MetricsViewTimeRangesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ResolvedTimeRange
+ */
+export class ResolvedTimeRange extends Message<ResolvedTimeRange> {
+  /**
+   * The start of the resolved time range.
+   *
+   * @generated from field: google.protobuf.Timestamp start = 1;
+   */
+  start?: Timestamp;
+
+  /**
+   * The end of the resolved time range.
+   *
+   * @generated from field: google.protobuf.Timestamp end = 2;
+   */
+  end?: Timestamp;
+
+  /**
+   * The time grain of the resolved time range.
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain grain = 3;
+   */
+  grain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * The time dimension that was used to resolve the time range.
+   *
+   * @generated from field: string time_dimension = 4;
+   */
+  timeDimension = "";
+
+  /**
+   * The time zone that was used to resolve the time range.
+   *
+   * @generated from field: string time_zone = 5;
+   */
+  timeZone = "";
+
+  /**
+   * The original expression used to resolve the time range.
+   *
+   * @generated from field: string expression = 6;
+   */
+  expression = "";
+
+  constructor(data?: PartialMessage<ResolvedTimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ResolvedTimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "start", kind: "message", T: Timestamp },
+    { no: 2, name: "end", kind: "message", T: Timestamp },
+    { no: 3, name: "grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 4, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolvedTimeRange {
+    return new ResolvedTimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ResolvedTimeRange {
+    return new ResolvedTimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ResolvedTimeRange {
+    return new ResolvedTimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ResolvedTimeRange | PlainMessage<ResolvedTimeRange> | undefined, b: ResolvedTimeRange | PlainMessage<ResolvedTimeRange> | undefined): boolean {
+    return proto3.util.equals(ResolvedTimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsRequest
+ */
+export class MetricsViewAnnotationsRequest extends Message<MetricsViewAnnotationsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: repeated string measures = 3;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: int32 priority = 4;
+   */
+  priority = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeRange time_range = 5;
+   */
+  timeRange?: TimeRange;
+
+  /**
+   * Optional
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 6;
+   */
+  timeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * Optional
+   *
+   * @generated from field: string time_zone = 7;
+   */
+  timeZone = "";
+
+  /**
+   * Optional
+   *
+   * @generated from field: int64 limit = 8;
+   */
+  limit = protoInt64.zero;
+
+  /**
+   * Optional
+   *
+   * @generated from field: int64 offset = 9;
+   */
+  offset = protoInt64.zero;
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "time_range", kind: "message", T: TimeRange },
+    { no: 6, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 7, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 9, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsRequest {
+    return new MetricsViewAnnotationsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined, b: MetricsViewAnnotationsRequest | PlainMessage<MetricsViewAnnotationsRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse
+ */
+export class MetricsViewAnnotationsResponse extends Message<MetricsViewAnnotationsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation rows = 1;
+   */
+  rows: MetricsViewAnnotationsResponse_Annotation[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "rows", kind: "message", T: MetricsViewAnnotationsResponse_Annotation, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse {
+    return new MetricsViewAnnotationsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined, b: MetricsViewAnnotationsResponse | PlainMessage<MetricsViewAnnotationsResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation
+ */
+export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsViewAnnotationsResponse_Annotation> {
+  /**
+   * Time when the annotation applies. Maps to `time` column from the table.
+   *
+   * @generated from field: google.protobuf.Timestamp time = 1;
+   */
+  time?: Timestamp;
+
+  /**
+   * Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column.
+   *
+   * @generated from field: optional google.protobuf.Timestamp time_end = 2;
+   */
+  timeEnd?: Timestamp;
+
+  /**
+   * User defined description of the annotation applies. Maps to `description` column from the table.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table.
+   *
+   * @generated from field: optional string duration = 4;
+   */
+  duration?: string;
+
+  /**
+   * Any other fields are captured here. Will be used in predicates in the future.
+   *
+   * @generated from field: google.protobuf.Struct additional_fields = 5;
+   */
+  additionalFields?: Struct;
+
+  /**
+   * List of measure names that this annotation applies to. If empty, no restrictions apply.
+   *
+   * @generated from field: repeated string for_measures = 6;
+   */
+  forMeasures: string[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewAnnotationsResponse_Annotation>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAnnotationsResponse.Annotation";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time", kind: "message", T: Timestamp },
+    { no: 2, name: "time_end", kind: "message", T: Timestamp, opt: true },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "duration", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "additional_fields", kind: "message", T: Struct },
+    { no: 6, name: "for_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAnnotationsResponse_Annotation {
+    return new MetricsViewAnnotationsResponse_Annotation().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined, b: MetricsViewAnnotationsResponse_Annotation | PlainMessage<MetricsViewAnnotationsResponse_Annotation> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAnnotationsResponse_Annotation, a, b);
   }
 }
 

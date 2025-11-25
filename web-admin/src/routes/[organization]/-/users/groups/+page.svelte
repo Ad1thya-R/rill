@@ -3,17 +3,16 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizationMemberUsergroups,
-    createAdminServiceListOrganizationMemberUsers,
   } from "@rilldata/web-admin/client";
-  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/users/CreateUserGroupDialog.svelte";
-  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/users/EditUserGroupDialog.svelte";
-  import OrgGroupsTable from "@rilldata/web-admin/features/organizations/users/OrgGroupsTable.svelte";
+  import CreateUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/CreateUserGroupDialog.svelte";
+  import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
+  import OrgGroupsTable from "@rilldata/web-admin/features/organizations/user-management/table/groups/OrgGroupsTable.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { Plus } from "lucide-svelte";
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50;
 
   let userGroupName = "";
   let isCreateUserGroupDialogOpen = false;
@@ -28,9 +27,6 @@
       pageToken,
       includeCounts: true,
     });
-  $: listOrganizationMemberUsers =
-    createAdminServiceListOrganizationMemberUsers(organization);
-
   const currentUser = createAdminServiceGetCurrentUser();
 
   $: filteredGroups =
@@ -77,7 +73,7 @@
     <div class="text-red-500">
       Error loading organization user groups: {$listOrganizationMemberUsergroups.error}
     </div>
-  {:else if $listOrganizationMemberUsergroups.isSuccess && $listOrganizationMemberUsers.isSuccess}
+  {:else if $listOrganizationMemberUsergroups.isSuccess}
     <div class="flex flex-col">
       <div class="flex flex-row gap-x-4">
         <Search
@@ -100,7 +96,6 @@
         <OrgGroupsTable
           data={filteredGroups}
           currentUserEmail={$currentUser.data?.user.email}
-          searchUsersList={$listOrganizationMemberUsers.data?.members ?? []}
           {hasNextPage}
           {isFetchingNextPage}
           onLoadMore={handleLoadMore}
@@ -122,13 +117,11 @@
 <CreateUserGroupDialog
   bind:open={isCreateUserGroupDialogOpen}
   groupName={userGroupName}
-  organizationUsers={$listOrganizationMemberUsers.data?.members ?? []}
   currentUserEmail={$currentUser.data?.user.email}
 />
 
 <EditUserGroupDialog
   bind:open={isEditUserGroupDialogOpen}
   groupName={userGroupName}
-  organizationUsers={$listOrganizationMemberUsers.data?.members ?? []}
   currentUserEmail={$currentUser.data?.user.email}
 />

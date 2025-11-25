@@ -50,6 +50,7 @@ export interface MetricsViewSearchResponseSearchResult {
 
 export interface MetricsViewSpecDimension {
   name?: string;
+  type?: MetricsViewSpecDimensionType;
   displayName?: string;
   description?: string;
   column?: string;
@@ -60,6 +61,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
 }
 
@@ -68,6 +70,16 @@ export interface MetricsViewSpecDimensionSelector {
   timeGrain?: V1TimeGrain;
   desc?: boolean;
 }
+
+export type MetricsViewSpecDimensionType =
+  (typeof MetricsViewSpecDimensionType)[keyof typeof MetricsViewSpecDimensionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecDimensionType = {
+  DIMENSION_TYPE_UNSPECIFIED: "DIMENSION_TYPE_UNSPECIFIED",
+  DIMENSION_TYPE_CATEGORICAL: "DIMENSION_TYPE_CATEGORICAL",
+  DIMENSION_TYPE_TIME: "DIMENSION_TYPE_TIME",
+} as const;
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
 
@@ -292,11 +304,11 @@ export interface V1AnalyzeVariablesResponse {
   variables?: V1AnalyzedVariable[];
 }
 
-export type V1AnalyzedConnectorConfig = { [key: string]: string };
+export type V1AnalyzedConnectorConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorPresetConfig = { [key: string]: string };
+export type V1AnalyzedConnectorPresetConfig = { [key: string]: unknown };
 
-export type V1AnalyzedConnectorProjectConfig = { [key: string]: string };
+export type V1AnalyzedConnectorProjectConfig = { [key: string]: unknown };
 
 export type V1AnalyzedConnectorEnvConfig = { [key: string]: string };
 
@@ -327,23 +339,6 @@ export interface V1AnalyzedVariable {
   /** List of resources that appear to use the connector. */
   usedBy?: V1ResourceName[];
 }
-
-export type V1AppContextContextMetadata = { [key: string]: unknown };
-
-export interface V1AppContext {
-  contextType?: V1AppContextType;
-  contextMetadata?: V1AppContextContextMetadata;
-}
-
-export type V1AppContextType =
-  (typeof V1AppContextType)[keyof typeof V1AppContextType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1AppContextType = {
-  APP_CONTEXT_TYPE_UNSPECIFIED: "APP_CONTEXT_TYPE_UNSPECIFIED",
-  APP_CONTEXT_TYPE_PROJECT_CHAT: "APP_CONTEXT_TYPE_PROJECT_CHAT",
-  APP_CONTEXT_TYPE_EXPLORE_DASHBOARD: "APP_CONTEXT_TYPE_EXPLORE_DASHBOARD",
-} as const;
 
 export type V1AssertionResultFailRow = { [key: string]: unknown };
 
@@ -630,6 +625,11 @@ export interface V1CompleteResponse {
   messages?: V1Message[];
 }
 
+export interface V1CompleteStreamingResponse {
+  conversationId?: string;
+  message?: V1Message;
+}
+
 export interface V1Component {
   spec?: V1ComponentSpec;
   state?: V1ComponentState;
@@ -665,7 +665,7 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
-export type V1ConnectorConfig = { [key: string]: string };
+export type V1ConnectorConfig = { [key: string]: unknown };
 
 export type V1ConnectorProvisionArgs = { [key: string]: unknown };
 
@@ -702,7 +702,7 @@ export interface V1ConnectorDriver {
   implementsWarehouse?: boolean;
 }
 
-export type V1ConnectorSpecProperties = { [key: string]: string };
+export type V1ConnectorSpecProperties = { [key: string]: unknown };
 
 export type V1ConnectorSpecProvisionArgs = { [key: string]: unknown };
 
@@ -733,8 +733,10 @@ export interface V1Conversation {
   id?: string;
   ownerId?: string;
   title?: string;
+  userAgent?: string;
   createdOn?: string;
   updatedOn?: string;
+  /** NOTE: Deprecated. */
   messages?: V1Message[];
 }
 
@@ -760,6 +762,7 @@ export interface V1CreateInstanceRequest {
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
+  frontendUrl?: string;
 }
 
 export interface V1CreateInstanceResponse {
@@ -906,8 +909,7 @@ These are not currently parsed from YAML, but will be derived from the parent me
   banner?: string;
   lockTimeZone?: boolean;
   allowCustomTimeRange?: boolean;
-  /** When true, it indicates that the explore was defined in a metrics view.
-This currently happens for legacy metrics views (that don't have `version: 1`), which also emits explores. */
+  /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
 }
 
@@ -1036,6 +1038,7 @@ export interface V1GenerateResolverResponse {
 
 export interface V1GetConversationResponse {
   conversation?: V1Conversation;
+  messages?: V1Message[];
 }
 
 export interface V1GetExploreResponse {
@@ -1136,6 +1139,7 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   environment?: string;
+  projectDisplayName?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
@@ -1149,6 +1153,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  frontendUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };
@@ -1196,6 +1201,7 @@ export interface V1ListConversationsResponse {
 
 export interface V1ListDatabaseSchemasResponse {
   databaseSchemas?: V1DatabaseSchemaInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -1222,6 +1228,7 @@ export interface V1ListResourcesResponse {
 
 export interface V1ListTablesResponse {
   tables?: V1TableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1Log {
@@ -1250,10 +1257,16 @@ export interface V1MapType {
 
 export interface V1Message {
   id?: string;
-  role?: string;
-  content?: V1ContentBlock[];
+  parentId?: string;
   createdOn?: string;
   updatedOn?: string;
+  index?: number;
+  role?: string;
+  type?: string;
+  tool?: string;
+  contentType?: string;
+  contentData?: string;
+  content?: V1ContentBlock[];
 }
 
 export interface V1MetricsView {
@@ -1354,6 +1367,32 @@ export interface V1MetricsViewAggregationResponse {
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
+}
+
+export interface V1MetricsViewAnnotationsResponse {
+  rows?: V1MetricsViewAnnotationsResponseAnnotation[];
+}
+
+/**
+ * Any other fields are captured here. Will be used in predicates in the future.
+ */
+export type V1MetricsViewAnnotationsResponseAnnotationAdditionalFields = {
+  [key: string]: unknown;
+};
+
+export interface V1MetricsViewAnnotationsResponseAnnotation {
+  /** Time when the annotation applies. Maps to `time` column from the table. */
+  time?: string;
+  /** Optional. Time when the annotation ends. Only present if the underlying table has the `time_end` column. */
+  timeEnd?: string;
+  /** User defined description of the annotation applies. Maps to `description` column from the table. */
+  description?: string;
+  /** Optional. Minimum duration this annotation is displayed for. Maps to `duration` column from the table. */
+  duration?: string;
+  /** Any other fields are captured here. Will be used in predicates in the future. */
+  additionalFields?: V1MetricsViewAnnotationsResponseAnnotationAdditionalFields;
+  /** List of measure names that this annotation applies to. If empty, no restrictions apply. */
+  forMeasures?: string[];
 }
 
 export interface V1MetricsViewColumn {
@@ -1491,6 +1530,8 @@ export interface V1MetricsViewSort {
 }
 
 export interface V1MetricsViewSpec {
+  /** name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`. */
+  parent?: string;
   connector?: string;
   database?: string;
   databaseSchema?: string;
@@ -1507,6 +1548,9 @@ export interface V1MetricsViewSpec {
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
   measures?: MetricsViewSpecMeasure[];
+  parentDimensions?: V1FieldSelector;
+  parentMeasures?: V1FieldSelector;
+  annotations?: V1MetricsViewSpecAnnotation[];
   securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
@@ -1516,6 +1560,29 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+}
+
+/**
+ * Annotations that can be applied to measures. Each annotation needs to have a model or a table defined.
+1. The underlying model/table has to have a `time` and `description` columns.
+2. Can additionally have `time_end` column to convert the annotation to range type annotation.
+3. Can additionally have `duration` column, this is used to not query for annotations greater than selected grain in dashboard. Also forces `time` and `time_end` in UI to be truncated to selected grain.
+ */
+export interface V1MetricsViewSpecAnnotation {
+  name?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  table?: string;
+  /** Name of the model that source of annotation. Either table or model should be set. */
+  model?: string;
+  /** Measures to apply the annotation to. If `measures_selector` is set, this will only be set in `state.valid_spec`. */
+  measures?: string[];
+  measuresSelector?: V1FieldSelector;
+  /** Signifies that the underlying table has `time_end` column. Will be used while querying to add additional filter. */
+  hasTimeEnd?: boolean;
+  /** Signifies that the underlying table has `duration` column. Will be used while querying to add additional filter. */
+  hasDuration?: boolean;
 }
 
 export interface V1MetricsViewState {
@@ -1533,6 +1600,11 @@ export interface V1MetricsViewTimeRangeResponse {
 }
 
 export interface V1MetricsViewTimeRangesResponse {
+  fullTimeRange?: V1TimeRangeSummary;
+  /** The resolved time ranges for the requested rilltime expressions. */
+  resolvedTimeRanges?: V1ResolvedTimeRange[];
+  /** The same values as resolved_time_ranges for backwards compatibility.
+Deprecated: use resolved_time_ranges instead. */
   timeRanges?: V1TimeRange[];
 }
 
@@ -1679,10 +1751,18 @@ export interface V1ModelSpec {
   stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
+  retryAttempts?: number;
+  retryDelaySeconds?: number;
+  retryExponentialBackoff?: boolean;
+  retryIfErrorMatches?: string[];
   changeMode?: V1ModelChangeMode;
   tests?: V1ModelTest[];
+  /** trigger indicates a normal refresh (incremental or full depending on the model type). */
   trigger?: boolean;
+  /** trigger_full indicates a full refresh regardless of the model type. */
   triggerFull?: boolean;
+  /** trigger_partitions indicates a refresh of existing partitions marked pending (won't sync new partitions). Only valid for incremental, partitioned models. */
+  triggerPartitions?: boolean;
   /** defined_as_source is true if it was defined by user as a source but converted internally to a model. */
   definedAsSource?: boolean;
 }
@@ -1784,6 +1864,7 @@ export interface V1OLAPGetTableResponse {
 
 export interface V1OLAPListTablesResponse {
   tables?: V1OlapTableInfo[];
+  nextPageToken?: string;
 }
 
 export interface V1OlapTableInfo {
@@ -2040,6 +2121,20 @@ export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
+export interface V1ResolvedTimeRange {
+  /** The start of the resolved time range. */
+  start?: string;
+  /** The end of the resolved time range. */
+  end?: string;
+  grain?: V1TimeGrain;
+  /** The time dimension that was used to resolve the time range. */
+  timeDimension?: string;
+  /** The time zone that was used to resolve the time range. */
+  timeZone?: string;
+  /** The original expression used to resolve the time range. */
+  expression?: string;
+}
+
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
@@ -2130,24 +2225,55 @@ export interface V1SecurityRule {
   access?: V1SecurityRuleAccess;
   fieldAccess?: V1SecurityRuleFieldAccess;
   rowFilter?: V1SecurityRuleRowFilter;
+  transitiveAccess?: V1SecurityRuleTransitiveAccess;
 }
 
 export interface V1SecurityRuleAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
+  /** Whether to allow or deny access to the resources covered by the conditions. */
   allow?: boolean;
+  /** If true, any resource not covered by the conditions will explicitly get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
 }
 
 export interface V1SecurityRuleFieldAccess {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   allow?: boolean;
+  /** If true, all other fields not explicitly listed will get the opposite permission (e.g. will be denied if `allow` is true). */
+  exclusive?: boolean;
   fields?: string[];
   allFields?: boolean;
 }
 
 export interface V1SecurityRuleRowFilter {
-  condition?: string;
+  /** The condition under which this rule applies.
+It is ANDed together with the condition_kinds and condition_resources. */
+  conditionExpression?: string;
+  /** The resource kinds the rule applies to. If empty, it defaults to all resource kinds. */
+  conditionKinds?: string[];
+  /** The resources the rule applies to. If empty, it defaults to all resources in scope covered by `resource_kinds`.
+It is ORed together with the condition_kinds. */
+  conditionResources?: V1ResourceName[];
   sql?: string;
   expression?: V1Expression;
+}
+
+export interface V1SecurityRuleTransitiveAccess {
+  resource?: V1ResourceName;
 }
 
 export interface V1Source {
@@ -2247,11 +2373,21 @@ export interface V1Theme {
   state?: V1ThemeState;
 }
 
+export type V1ThemeColorsVariables = { [key: string]: string };
+
+export interface V1ThemeColors {
+  primary?: string;
+  secondary?: string;
+  variables?: V1ThemeColorsVariables;
+}
+
 export interface V1ThemeSpec {
   primaryColor?: V1Color;
   secondaryColor?: V1Color;
   primaryColorRaw?: string;
   secondaryColorRaw?: string;
+  light?: V1ThemeColors;
+  dark?: V1ThemeColors;
 }
 
 export interface V1ThemeState {
@@ -2373,6 +2509,8 @@ export type ConnectorServiceBigQueryListTablesParams = {
 export type ConnectorServiceListDatabaseSchemasParams = {
   instanceId?: string;
   connector?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceOLAPGetTableParams = {
@@ -2396,6 +2534,8 @@ export type ConnectorServiceListTablesParams = {
   connector?: string;
   database?: string;
   databaseSchema?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {
@@ -2451,20 +2591,41 @@ export type RuntimeServiceEditInstanceBody = {
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+  frontendUrl?: string;
 };
 
 export type RuntimeServiceCompleteBody = {
   conversationId?: string;
-  messages?: V1Message[];
-  toolNames?: string[];
-  appContext?: V1AppContext;
+  prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
 };
 
-export type RuntimeServiceGetConversationParams = {
+export type RuntimeServiceCompleteStreamingBody = {
+  conversationId?: string;
+  prompt?: string;
+  explore?: string;
+  dimensions?: string[];
+  measures?: string[];
+  where?: V1Expression;
+  timeStart?: string;
+  timeEnd?: string;
+};
+
+export type RuntimeServiceCompleteStreaming200 = {
+  result?: V1CompleteStreamingResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceListConversationsParams = {
   /**
-   * Whether to include system messages in the response (defaults to false for UI use)
+   * Optional search pattern for filtering by user agent.
    */
-  includeSystemMessages?: boolean;
+  userAgentPattern?: string;
 };
 
 export type RuntimeServiceListFilesParams = {
@@ -2523,6 +2684,7 @@ export type RuntimeServiceRenameFileBody = {
 
 export type RuntimeServiceUnpackEmptyBody = {
   displayName?: string;
+  olap?: string;
   force?: boolean;
 };
 
@@ -2672,6 +2834,8 @@ export type QueryServiceExportBody = {
   /** Optional UI URL that the export originates from.
 Only used if include_header is true. */
   originUrl?: string;
+  /** Optional Execution to attach to the underlying query. Used to resolve rill-time expressions. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -2697,6 +2861,16 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+};
+
+export type QueryServiceMetricsViewAnnotationsBody = {
+  measures?: string[];
+  priority?: number;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  limit?: string;
+  offset?: string;
 };
 
 export type QueryServiceMetricsViewComparisonBody = {
@@ -2754,10 +2928,16 @@ export type QueryServiceMetricsViewTimeRangeBody = {
 };
 
 export type QueryServiceMetricsViewTimeRangesBody = {
+  /** Optional time range expressions to resolve (uses the rilltime expression syntax). */
   expressions?: string[];
+  /** Optional query priority. */
   priority?: number;
+  /** Optional time zone that overrides the time zones used when resolving the time range expressions. */
   timeZone?: string;
+  /** Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension. */
   timeDimension?: string;
+  /** Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided. */
+  executionTime?: string;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
@@ -3015,6 +3195,8 @@ Has the same syntax and behavior as ILIKE in SQL.
 If the connector supports schema/database names, it searches against both the plain table name and the fully qualified table name.
  */
   searchPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type ConnectorServiceS3GetBucketMetadataParams = {

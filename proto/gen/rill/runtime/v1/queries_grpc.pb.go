@@ -33,6 +33,7 @@ const (
 	QueryService_MetricsViewSchema_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewSchema"
 	QueryService_MetricsViewSearch_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewSearch"
 	QueryService_MetricsViewTimeRanges_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewTimeRanges"
+	QueryService_MetricsViewAnnotations_FullMethodName      = "/rill.runtime.v1.QueryService/MetricsViewAnnotations"
 	QueryService_ResolveCanvas_FullMethodName               = "/rill.runtime.v1.QueryService/ResolveCanvas"
 	QueryService_ResolveComponent_FullMethodName            = "/rill.runtime.v1.QueryService/ResolveComponent"
 	QueryService_ColumnRollupInterval_FullMethodName        = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
@@ -107,13 +108,16 @@ type QueryServiceClient interface {
 	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
 	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(ctx context.Context, in *MetricsViewRowsRequest, opts ...grpc.CallOption) (*MetricsViewRowsResponse, error)
-	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+	// Deprecated: use MetricsViewTimeRanges instead.
 	MetricsViewTimeRange(ctx context.Context, in *MetricsViewTimeRangeRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangeResponse, error)
 	// MetricsViewSchema Get the data types of measures and dimensions
 	MetricsViewSchema(ctx context.Context, in *MetricsViewSchemaRequest, opts ...grpc.CallOption) (*MetricsViewSchemaResponse, error)
 	// MetricsViewSearch Get the data types of measures and dimensions
 	MetricsViewSearch(ctx context.Context, in *MetricsViewSearchRequest, opts ...grpc.CallOption) (*MetricsViewSearchResponse, error)
+	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(ctx context.Context, in *MetricsViewTimeRangesRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangesResponse, error)
+	MetricsViewAnnotations(ctx context.Context, in *MetricsViewAnnotationsRequest, opts ...grpc.CallOption) (*MetricsViewAnnotationsResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
 	ResolveCanvas(ctx context.Context, in *ResolveCanvasRequest, opts ...grpc.CallOption) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
@@ -298,6 +302,16 @@ func (c *queryServiceClient) MetricsViewTimeRanges(ctx context.Context, in *Metr
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MetricsViewTimeRangesResponse)
 	err := c.cc.Invoke(ctx, QueryService_MetricsViewTimeRanges_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) MetricsViewAnnotations(ctx context.Context, in *MetricsViewAnnotationsRequest, opts ...grpc.CallOption) (*MetricsViewAnnotationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MetricsViewAnnotationsResponse)
+	err := c.cc.Invoke(ctx, QueryService_MetricsViewAnnotations_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -511,13 +525,16 @@ type QueryServiceServer interface {
 	// | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
 	// | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
 	MetricsViewRows(context.Context, *MetricsViewRowsRequest) (*MetricsViewRowsResponse, error)
-	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view.
+	// Deprecated: use MetricsViewTimeRanges instead.
 	MetricsViewTimeRange(context.Context, *MetricsViewTimeRangeRequest) (*MetricsViewTimeRangeResponse, error)
 	// MetricsViewSchema Get the data types of measures and dimensions
 	MetricsViewSchema(context.Context, *MetricsViewSchemaRequest) (*MetricsViewSchemaResponse, error)
 	// MetricsViewSearch Get the data types of measures and dimensions
 	MetricsViewSearch(context.Context, *MetricsViewSearchRequest) (*MetricsViewSearchResponse, error)
+	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(context.Context, *MetricsViewTimeRangesRequest) (*MetricsViewTimeRangesResponse, error)
+	MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
 	ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error)
 	// ResolveComponent resolves renderer for a Component resource.
@@ -600,6 +617,9 @@ func (UnimplementedQueryServiceServer) MetricsViewSearch(context.Context, *Metri
 }
 func (UnimplementedQueryServiceServer) MetricsViewTimeRanges(context.Context, *MetricsViewTimeRangesRequest) (*MetricsViewTimeRangesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTimeRanges not implemented")
+}
+func (UnimplementedQueryServiceServer) MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewAnnotations not implemented")
 }
 func (UnimplementedQueryServiceServer) ResolveCanvas(context.Context, *ResolveCanvasRequest) (*ResolveCanvasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveCanvas not implemented")
@@ -908,6 +928,24 @@ func _QueryService_MetricsViewTimeRanges_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).MetricsViewTimeRanges(ctx, req.(*MetricsViewTimeRangesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_MetricsViewAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsViewAnnotationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).MetricsViewAnnotations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_MetricsViewAnnotations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).MetricsViewAnnotations(ctx, req.(*MetricsViewAnnotationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1240,6 +1278,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewTimeRanges",
 			Handler:    _QueryService_MetricsViewTimeRanges_Handler,
+		},
+		{
+			MethodName: "MetricsViewAnnotations",
+			Handler:    _QueryService_MetricsViewAnnotations_Handler,
 		},
 		{
 			MethodName: "ResolveCanvas",

@@ -122,7 +122,7 @@ func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, so
 	_, err := c.executeQuery(ctx, client, finalSQL,
 		sourceProperties.ResolveDatabase(c.config),
 		sourceProperties.ResolveWorkgroup(c.config),
-		sourceProperties.ResolveClusterIdentifier(c.config))
+		sourceProperties.ResolveClusterIdentifier(c.config), nil)
 	return err
 }
 
@@ -182,7 +182,7 @@ func deleteObjectsInPrefix(ctx context.Context, cfg aws.Config, bucketName, pref
 			}
 		}
 
-		if *out.IsTruncated && out.NextContinuationToken != nil {
+		if out.IsTruncated != nil && *out.IsTruncated && out.NextContinuationToken != nil {
 			continuationToken = out.NextContinuationToken
 		} else {
 			break

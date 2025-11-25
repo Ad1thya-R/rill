@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
-    "generate:runtime-client": "orval --config ./orval.config.ts",
+    "generate:runtime-client": "svelte-kit sync && orval --config ./orval.config.ts",
     "generate:sveltekit": "svelte-kit sync",
     "generate:template-schema": "ts-json-schema-generator --path 'src/features/canvas/components/types.ts' --type TemplateSpec -o ../runtime/parser/data/component-template-v1.json",
     "test": "vitest run",
@@ -78,7 +78,7 @@
     "json-schema": "^0.4.0",
     "lucide-svelte": "^0.298.0",
     "luxon": "^3.5.0",
-    "marked": "^12.0.1",
+    "marked": "^16.4.0",
     "match-sorter": "^6.3.1",
     "memoizee": "^0.4.17",
     "nearley": "^2.20.1",

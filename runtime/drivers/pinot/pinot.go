@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
+	"strings"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
@@ -25,7 +26,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "Pinot",
 	Description: "Connect to Apache Pinot.",
-	DocsURL:     "https://docs.rilldata.com/reference/olap-engines/pinot",
+	DocsURL:     "https://docs.rilldata.com/build/connectors/olap/pinot",
 	// Important: Any edits to the below properties must be accompanied by changes to the client-side form validation schemas.
 	ConfigProperties: []*drivers.PropertySpec{
 		{
@@ -118,6 +119,20 @@ type configProperties struct {
 	TimeoutMS int64 `mapstructure:"timeout_ms"`
 }
 
+func (c *configProperties) validate() error {
+	var set []string
+	if c.BrokerHost != "" {
+		set = append(set, "broker_host")
+	}
+	if c.ControllerHost != "" {
+		set = append(set, "controller_host")
+	}
+	if c.DSN != "" && len(set) > 0 {
+		return fmt.Errorf("pinot: Only one of 'dsn' or [%s] can be set", strings.Join(set, ", "))
+	}
+	return nil
+}
+
 // Open a connection to Apache Pinot using HTTP API.
 func (d driver) Open(instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
@@ -127,6 +142,10 @@ func (d driver) Open(instanceID string, config map[string]any, st *storage.Clien
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := conf.validate(); err != nil {
 		return nil, err
 	}
 
@@ -241,7 +260,7 @@ func (c *connection) Ping(ctx context.Context) error {
 	return c.db.PingContext(ctx)
 }
 
-// Driver implements drivers.Connection.
+// Driver implements drivers.Handle.
 func (c *connection) Driver() string {
 	return "pinot"
 }
@@ -251,7 +270,12 @@ func (c *connection) Config() map[string]any {
 	return maps.Clone(c.config)
 }
 
-// Close implements drivers.Connection.
+// MayBeScaledToZero implements drivers.Handle.
+func (c *connection) MayBeScaledToZero(ctx context.Context) bool {
+	return false
+}
+
+// Close implements drivers.Handle.
 func (c *connection) Close() error {
 	return c.db.Close()
 }
@@ -280,9 +304,9 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
 }
 
-// AsInformationSchema implements drivers.Connection.
+// AsInformationSchema implements drivers.Handle.
 func (c *connection) AsInformationSchema() (drivers.InformationSchema, bool) {
-	return nil, false
+	return c, true
 }
 
 func (c *connection) Migrate(ctx context.Context) (err error) {
@@ -297,8 +321,8 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
-func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	return nil, false
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, error) {
+	return nil, drivers.ErrNotImplemented
 }
 
 // AsModelManager implements drivers.Handle.
@@ -315,7 +339,7 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
-// AsNotifier implements drivers.Connection.
+// AsNotifier implements drivers.Handle.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }

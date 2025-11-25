@@ -2532,7 +2532,21 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for TriggerFull
 
+	// no validation rules for TriggerPartitions
+
 	// no validation rules for DefinedAsSource
+
+	if m.RetryAttempts != nil {
+		// no validation rules for RetryAttempts
+	}
+
+	if m.RetryDelaySeconds != nil {
+		// no validation rules for RetryDelaySeconds
+	}
+
+	if m.RetryExponentialBackoff != nil {
+		// no validation rules for RetryExponentialBackoff
+	}
 
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
@@ -3157,6 +3171,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Parent
+
 	// no validation rules for Connector
 
 	// no validation rules for Database
@@ -3239,6 +3255,98 @@ func (m *MetricsViewSpec) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return MetricsViewSpecValidationError{
 					field:  fmt.Sprintf("Measures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetParentDimensions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "ParentDimensions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "ParentDimensions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetParentDimensions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpecValidationError{
+				field:  "ParentDimensions",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetParentMeasures()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "ParentMeasures",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "ParentMeasures",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetParentMeasures()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpecValidationError{
+				field:  "ParentMeasures",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetAnnotations() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("Annotations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("Annotations[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpecValidationError{
+					field:  fmt.Sprintf("Annotations[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -3517,6 +3625,47 @@ func (m *SecurityRule) validate(all bool) error {
 			}
 		}
 
+	case *SecurityRule_TransitiveAccess:
+		if v == nil {
+			err := SecurityRuleValidationError{
+				field:  "Rule",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTransitiveAccess()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "TransitiveAccess",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "TransitiveAccess",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTransitiveAccess()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleValidationError{
+					field:  "TransitiveAccess",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -3620,9 +3769,45 @@ func (m *SecurityRuleAccess) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Condition
+	// no validation rules for ConditionExpression
+
+	for idx, item := range m.GetConditionResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleAccessValidationError{
+					field:  fmt.Sprintf("ConditionResources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Allow
+
+	// no validation rules for Exclusive
 
 	if len(errors) > 0 {
 		return SecurityRuleAccessMultiError(errors)
@@ -3726,9 +3911,45 @@ func (m *SecurityRuleFieldAccess) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Condition
+	// no validation rules for ConditionExpression
+
+	for idx, item := range m.GetConditionResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleFieldAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleFieldAccessValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleFieldAccessValidationError{
+					field:  fmt.Sprintf("ConditionResources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Allow
+
+	// no validation rules for Exclusive
 
 	// no validation rules for AllFields
 
@@ -3834,7 +4055,41 @@ func (m *SecurityRuleRowFilter) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Condition
+	// no validation rules for ConditionExpression
+
+	for idx, item := range m.GetConditionResources() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleRowFilterValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleRowFilterValidationError{
+						field:  fmt.Sprintf("ConditionResources[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleRowFilterValidationError{
+					field:  fmt.Sprintf("ConditionResources[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Sql
 
@@ -3946,6 +4201,138 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SecurityRuleRowFilterValidationError{}
+
+// Validate checks the field values on SecurityRuleTransitiveAccess with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SecurityRuleTransitiveAccess) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SecurityRuleTransitiveAccess with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SecurityRuleTransitiveAccessMultiError, or nil if none found.
+func (m *SecurityRuleTransitiveAccess) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SecurityRuleTransitiveAccess) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetResource()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SecurityRuleTransitiveAccessValidationError{
+					field:  "Resource",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SecurityRuleTransitiveAccessValidationError{
+					field:  "Resource",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResource()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SecurityRuleTransitiveAccessValidationError{
+				field:  "Resource",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SecurityRuleTransitiveAccessMultiError(errors)
+	}
+
+	return nil
+}
+
+// SecurityRuleTransitiveAccessMultiError is an error wrapping multiple
+// validation errors returned by SecurityRuleTransitiveAccess.ValidateAll() if
+// the designated constraints aren't met.
+type SecurityRuleTransitiveAccessMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SecurityRuleTransitiveAccessMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SecurityRuleTransitiveAccessMultiError) AllErrors() []error { return m }
+
+// SecurityRuleTransitiveAccessValidationError is the validation error returned
+// by SecurityRuleTransitiveAccess.Validate if the designated constraints
+// aren't met.
+type SecurityRuleTransitiveAccessValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SecurityRuleTransitiveAccessValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SecurityRuleTransitiveAccessValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SecurityRuleTransitiveAccessValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SecurityRuleTransitiveAccessValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SecurityRuleTransitiveAccessValidationError) ErrorName() string {
+	return "SecurityRuleTransitiveAccessValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SecurityRuleTransitiveAccessValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSecurityRuleTransitiveAccess.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SecurityRuleTransitiveAccessValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SecurityRuleTransitiveAccessValidationError{}
 
 // Validate checks the field values on MetricsViewState with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -8553,6 +8940,72 @@ func (m *ThemeSpec) validate(all bool) error {
 
 	}
 
+	if m.Light != nil {
+
+		if all {
+			switch v := interface{}(m.GetLight()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "Light",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "Light",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetLight()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ThemeSpecValidationError{
+					field:  "Light",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.Dark != nil {
+
+		if all {
+			switch v := interface{}(m.GetDark()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "Dark",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "Dark",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetDark()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ThemeSpecValidationError{
+					field:  "Dark",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ThemeSpecMultiError(errors)
 	}
@@ -8728,6 +9181,111 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ThemeStateValidationError{}
+
+// Validate checks the field values on ThemeColors with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeColors) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeColors with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeColorsMultiError, or
+// nil if none found.
+func (m *ThemeColors) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeColors) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Primary
+
+	// no validation rules for Secondary
+
+	// no validation rules for Variables
+
+	if len(errors) > 0 {
+		return ThemeColorsMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeColorsMultiError is an error wrapping multiple validation errors
+// returned by ThemeColors.ValidateAll() if the designated constraints aren't met.
+type ThemeColorsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeColorsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeColorsMultiError) AllErrors() []error { return m }
+
+// ThemeColorsValidationError is the validation error returned by
+// ThemeColors.Validate if the designated constraints aren't met.
+type ThemeColorsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeColorsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeColorsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeColorsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeColorsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeColorsValidationError) ErrorName() string { return "ThemeColorsValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeColorsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeColors.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeColorsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeColorsValidationError{}
 
 // Validate checks the field values on Component with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -11621,7 +12179,34 @@ func (m *ConnectorSpec) validate(all bool) error {
 
 	// no validation rules for Driver
 
-	// no validation rules for Properties
+	if all {
+		switch v := interface{}(m.GetProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConnectorSpecValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConnectorSpecValidationError{
+					field:  "Properties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConnectorSpecValidationError{
+				field:  "Properties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for Provision
 
@@ -11858,6 +12443,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for Type
+
 	// no validation rules for DisplayName
 
 	// no validation rules for Description
@@ -11877,6 +12464,8 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 	// no validation rules for LookupValueColumn
 
 	// no validation rules for LookupDefaultExpression
+
+	// no validation rules for SmallestTimeGrain
 
 	if all {
 		switch v := interface{}(m.GetDataType()).(type) {
@@ -12513,3 +13102,150 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpec_MeasureValidationError{}
+
+// Validate checks the field values on MetricsViewSpec_Annotation with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewSpec_Annotation) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewSpec_Annotation with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewSpec_AnnotationMultiError, or nil if none found.
+func (m *MetricsViewSpec_Annotation) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSpec_Annotation) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
+	// no validation rules for Table
+
+	// no validation rules for Model
+
+	if all {
+		switch v := interface{}(m.GetMeasuresSelector()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_AnnotationValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_AnnotationValidationError{
+					field:  "MeasuresSelector",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMeasuresSelector()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_AnnotationValidationError{
+				field:  "MeasuresSelector",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for HasTimeEnd
+
+	// no validation rules for HasDuration
+
+	if len(errors) > 0 {
+		return MetricsViewSpec_AnnotationMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSpec_AnnotationMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewSpec_Annotation.ValidateAll() if
+// the designated constraints aren't met.
+type MetricsViewSpec_AnnotationMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSpec_AnnotationMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSpec_AnnotationMultiError) AllErrors() []error { return m }
+
+// MetricsViewSpec_AnnotationValidationError is the validation error returned
+// by MetricsViewSpec_Annotation.Validate if the designated constraints aren't met.
+type MetricsViewSpec_AnnotationValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSpec_AnnotationValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSpec_AnnotationValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSpec_AnnotationValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSpec_AnnotationValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSpec_AnnotationValidationError) ErrorName() string {
+	return "MetricsViewSpec_AnnotationValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSpec_AnnotationValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSpec_Annotation.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSpec_AnnotationValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSpec_AnnotationValidationError{}

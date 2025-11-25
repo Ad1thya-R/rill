@@ -32,6 +32,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(CloneCmd(ch))
 	projectCmd.AddCommand(GitPushCmd(ch))
 	projectCmd.AddCommand(DeployCmd(ch))
+	projectCmd.AddCommand(TablesCmd(ch))
 
 	return projectCmd
 }
@@ -44,7 +45,7 @@ func ProjectNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
 
 	org := ch.Org
 
-	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: org})
+	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{Org: org})
 	if err != nil {
 		return nil, err
 	}

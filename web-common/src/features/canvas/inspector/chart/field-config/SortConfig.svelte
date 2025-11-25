@@ -4,11 +4,11 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import DragHandle from "@rilldata/web-common/components/icons/DragHandle.svelte";
   import * as Popover from "@rilldata/web-common/components/popover";
+  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
   import type {
     ChartSortDirectionOptions,
     FieldConfig,
-  } from "@rilldata/web-common/features/canvas/components/charts/types";
-  import type { ChartFieldInput } from "@rilldata/web-common/features/canvas/inspector/types";
+  } from "@rilldata/web-common/features/components/charts/types";
   import { List } from "lucide-svelte";
 
   export let fieldConfig: FieldConfig;
@@ -24,6 +24,8 @@
     { label: "Y-axis descending", value: "-y" },
     { label: "Color ascending", value: "color" },
     { label: "Color descending", value: "-color" },
+    { label: "Measure ascending", value: "measure" },
+    { label: "Measure descending", value: "-measure" },
     { label: "Custom", value: "custom" },
   ];
 
@@ -38,9 +40,15 @@
     : (sortConfig?.defaultSort ?? "x");
 
   $: customSortDraggableItems = sortConfig?.customSortItems?.map((item) => ({
-    id: item,
+    id: sanitizeItemId(item),
     value: item,
   }));
+
+  function sanitizeItemId(item: string | null) {
+    if (item === null) return "null-item";
+    if (item === "") return "<empty-string>";
+    return item;
+  }
 
   function handleReorder(data: {
     items: { id: string; value: string }[];

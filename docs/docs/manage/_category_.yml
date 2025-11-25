@@ -1,4 +1,4 @@
 position: 50
-label: Administration
-collapsible: true
-collapsed: true
+label: Manage
+collapsible: false
+collapsed: false

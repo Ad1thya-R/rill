@@ -90,6 +90,23 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 	return a.httpMiddleware(next, true)
 }
 
+// CookieRefreshMiddleware is a middleware that refreshes the auth cookie.
+// This enables us to do rolling cookie refreshes so we can have a relatively short cookie max age.
+// Note that it does not update the auth token encrypted inside the cookie.
+func (a *Authenticator) CookieRefreshMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sess := a.cookies.Get(r, cookieName)
+		if authToken, ok := sess.Values[cookieFieldAccessToken].(string); ok && authToken != "" {
+			// Re-save the cookie to refresh its expiration
+			if err := sess.Save(r, w); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // httpMiddleware is the actual implementation of HTTPMiddleware and HTTPMiddlewareLenient.
 func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +136,13 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 		if ok && authToken != "" {
 			newCtx, err := a.parseClaimsFromToken(r.Context(), authToken)
 			if err != nil {
-				// NOTE: No lenient mode for cookies. It doesn't make sense at the moment.
+				// In lenient mode, we set anonClaims.
+				if lenient {
+					newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
+					next.ServeHTTP(w, r.WithContext(newCtx))
+					return
+				}
+
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}

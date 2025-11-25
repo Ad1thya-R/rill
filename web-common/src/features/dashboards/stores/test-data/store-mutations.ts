@@ -9,6 +9,7 @@ import {
   removeDimensionFilter,
   toggleDimensionValueSelection,
 } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
+import { handleDimensionMeasureColumnHeaderClick } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-table.ts";
 import {
   setPrimaryDimension,
   toggleDimensionVisibility,
@@ -48,6 +49,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/random";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
@@ -246,6 +248,13 @@ export const AD_BIDS_SORT_ASC_BY_IMPRESSIONS: TestDashboardMutation = (mut) => {
   setSortDescending(mut);
   toggleSort(mut, mut.dashboard.dashboardSortType);
 };
+export const AD_BIDS_SORT_BY_PERCENT_CHANGE_IMPRESSIONS: TestDashboardMutation =
+  (mut) => {
+    handleDimensionMeasureColumnHeaderClick(
+      mut,
+      AD_BIDS_IMPRESSIONS_MEASURE + "_delta_perc",
+    );
+  };
 export const AD_BIDS_SORT_ASC_BY_BID_PRICE: TestDashboardMutation = (mut) => {
   setLeaderboardSortByMeasureName(mut, AD_BIDS_BID_PRICE_MEASURE);
   setSortDescending(mut);
@@ -439,14 +448,28 @@ export const AD_BIDS_OPEN_DOM_BP_PIVOT: TestDashboardMutation = () =>
     ],
   );
 
-export function applyMutationsToDashboard(
+// Pivot actions are still using the old method. So they are not easily reusable.
+export const AD_BIDS_SET_TIME_PIVOT_FILTER = (field: string) => {
+  return (({ dashboard }) =>
+    (dashboard.pivot.sorting = [
+      { desc: true, id: field },
+    ])) as TestDashboardMutation;
+};
+
+export async function applyMutationsToDashboard(
   name: string,
   mutations: TestDashboardMutation[],
 ) {
-  updateMetricsExplorerByName(name, (dashboard) => {
-    const dashboardMutables = {
-      dashboard,
-    } as DashboardMutables;
-    mutations.forEach((mutation) => mutation(dashboardMutables));
-  });
+  for (const mutation of mutations) {
+    updateMetricsExplorerByName(name, (dashboard) => {
+      const dashboardMutables = {
+        dashboard,
+      } as DashboardMutables;
+      mutation(dashboardMutables);
+    });
+    // DashboardStateSync.gotoNewState that listens to changes to the dashboard store is an async function.
+    // So go through the mutations individually and wait for 1ms for that to finish.
+    // Without this the lock in gotoNewState will stop the very quick successive changes to dashboard.
+    await asyncWait(1);
+  }
 }

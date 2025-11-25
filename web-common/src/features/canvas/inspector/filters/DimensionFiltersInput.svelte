@@ -9,10 +9,10 @@
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { isExpressionUnsupported } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-  import { flip } from "svelte/animate";
-  import type { Filters } from "../../stores/filters";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { flip } from "svelte/animate";
+  import type { Filters } from "../../stores/filters";
 
   export let id: string;
   export let canvasName: string;
@@ -26,13 +26,16 @@
 
   $: ({
     canvasEntity: {
-      spec: { getDimensionsForMetricView, getSimpleMeasuresForMetricView },
+      metricsView: {
+        getDimensionsForMetricView,
+        getSimpleMeasuresForMetricView,
+      },
     },
   } = getCanvasStore(canvasName, instanceId));
 
   $: ({
     whereFilter,
-    toggleDimensionValueSelection,
+    toggleMultipleDimensionValueSelections,
     applyDimensionInListMode,
     applyDimensionContainsMode,
     removeDimensionFilter,
@@ -154,7 +157,9 @@
                   onRemove={() => removeDimensionFilter(name)}
                   onToggleFilterMode={() => toggleDimensionFilterMode(name)}
                   onSelect={(value) =>
-                    toggleDimensionValueSelection(name, value, true)}
+                    toggleMultipleDimensionValueSelections(name, [value], true)}
+                  onMultiSelect={(values) =>
+                    toggleMultipleDimensionValueSelections(name, values, true)}
                   onApplyInList={(values) =>
                     applyDimensionInListMode(name, values)}
                   onApplyContainsMode={(searchText) =>

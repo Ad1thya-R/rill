@@ -12,6 +12,7 @@
     useSourceFromYaml,
   } from "@rilldata/web-common/features/sources/selectors";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import NavigationMenuSeparator from "@rilldata/web-common/layout/navigation/NavigationMenuSeparator.svelte";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -25,12 +26,12 @@
   import { WandIcon } from "lucide-svelte";
   import MetricsViewIcon from "../../../components/icons/MetricsViewIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { createModelFromTable } from "../../connectors/olap/createModel";
   import { useCreateMetricsViewFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
   } from "../refreshSource";
+  import { createSqlModelFromTable } from "../../connectors/code-utils";
 
   export let filePath: string;
 
@@ -84,7 +85,7 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
-      const [newModelPath, newModelName] = await createModelFromTable(
+      const [newModelPath, newModelName] = await createSqlModelFromTable(
         queryClient,
         connector,
         database,
@@ -191,3 +192,5 @@
     Replace source with uploaded file
   </NavigationMenuItem>
 {/if}
+
+<NavigationMenuSeparator />
