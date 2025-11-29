@@ -150,6 +150,11 @@ message DashboardState {
   repeated PivotElement pivot_row_all_dimensions = 35;
   // List of all dimensions selected for columns
   repeated PivotElement pivot_column_all_dimensions = 36;
+
+  // Whether scenario comparison mode is enabled
+  optional bool show_scenario_comparison = 41;
+  // The selected scenario to compare against Main
+  optional string selected_scenario = 42;
 }
 
 message DashboardTimeRange {

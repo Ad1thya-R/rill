@@ -1586,6 +1586,9 @@ paths:
               rows:
                 type: boolean
                 title: Optional. Defaults to false. Used to fetch rows from underlying model
+              scenario:
+                type: string
+                description: Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/annotations:
@@ -2073,6 +2076,9 @@ paths:
               timeDimension:
                 type: string
                 title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+              scenario:
+                type: string
+                description: Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -3285,6 +3291,13 @@ definitions:
       dataType:
         $ref: '#/definitions/runtimev1Type'
         description: The data type of the measure. Only populated in ValidSpec.
+      scenarioExpressions:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          Scenario-specific expressions. Keys are scenario names, values are SQL expressions.
+          When a scenario is selected, if this measure has an entry for that scenario, the scenario expression is used instead of the main expression.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3311,6 +3324,14 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
+  MetricsViewSpecScenario:
+    type: object
+    properties:
+      name:
+        type: string
+      label:
+        type: string
+    title: Scenario defines a named alternative expression variant for measures
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -5327,6 +5348,9 @@ definitions:
       rows:
         type: boolean
         title: Optional. Defaults to false. Used to fetch rows from underlying model
+      scenario:
+        type: string
+        description: Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression.
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -5725,6 +5749,14 @@ definitions:
       cacheKeyTtlSeconds:
         type: string
         format: int64
+      scenarios:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecScenario'
+        description: |-
+          Scenarios define named alternative expression variants for measures.
+          When a scenario is selected in the UI, measures with scenario_expressions for that scenario will use the alternative expression.
   v1MetricsViewSpecAnnotation:
     type: object
     properties:
@@ -5853,6 +5885,9 @@ definitions:
       timeDimension:
         type: string
         title: Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+      scenario:
+        type: string
+        description: Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression.
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:

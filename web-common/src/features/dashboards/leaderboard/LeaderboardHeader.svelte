@@ -33,6 +33,12 @@
   ) => void;
   export let measureLabel: (measureName: string) => string;
 
+  // Scenario comparison props
+  export let showScenarioComparison = false;
+  export let scenarioLabel: string | undefined = undefined;
+  export let scenarioDeltaAbsolute = false;
+  export let scenarioDeltaPercent = false;
+
   function shouldShowContextColumns(measureName: string): boolean {
     return (
       leaderboardShowContextForAllMeasures ||
@@ -219,6 +225,33 @@
           </button>
         </th>
       {/if}
+
+      {#if showScenarioComparison}
+        <th data-scenario-header>
+          <span
+            class="scenario-header text-xs text-green-600 truncate"
+            title="[{scenarioLabel || 'Scenario'}] {measureLabel(measureName)}"
+          >
+            [{scenarioLabel || 'Scenario'}]
+          </span>
+        </th>
+      {/if}
+
+      {#if showScenarioComparison && scenarioDeltaAbsolute}
+        <th data-scenario-delta-header>
+          <span class="scenario-header text-xs text-gray-500 truncate" title="Δ Scenario">
+            Δ
+          </span>
+        </th>
+      {/if}
+
+      {#if showScenarioComparison && scenarioDeltaPercent}
+        <th data-scenario-delta-percent-header>
+          <span class="scenario-header text-xs text-gray-500 truncate" title="Δ% Scenario">
+            Δ%
+          </span>
+        </th>
+      {/if}
     {/each}
   </tr>
 </thead>
@@ -242,5 +275,14 @@
 
   th:not(:nth-of-type(2)) button {
     @apply justify-end;
+  }
+
+  th[data-scenario-header] {
+    @apply px-1;
+  }
+
+  .scenario-header {
+    @apply block text-right whitespace-nowrap overflow-hidden;
+    max-width: 60px;
   }
 </style>

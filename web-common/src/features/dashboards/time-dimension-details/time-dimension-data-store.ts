@@ -39,6 +39,9 @@ export type TimeDimensionDataState = {
   isError?: boolean;
   comparing?: TDDComparison;
   data?: TableData;
+  // Scenario comparison state
+  showScenarioComparison?: boolean;
+  selectedScenario?: string;
 };
 
 export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
@@ -204,6 +207,7 @@ function prepareDimensionData(
 /***
  * Add totals row from time series data
  * Add Current, Previous, Percentage Change, Absolute Change rows for time comparison
+ * Add Scenario rows when scenario comparison is active
  * Transpose the data to columnar format
  */
 function prepareTimeData(
@@ -215,6 +219,12 @@ function prepareTimeData(
   measure: MetricsViewSpecMeasure | undefined,
   hasTimeComparison: boolean,
   isAllTime: boolean,
+  // Scenario comparison params
+  scenarioData?: TimeSeriesDatum[],
+  scenarioTotal?: number,
+  scenarioLabel?: string,
+  showScenarioDelta?: boolean,
+  showScenarioDeltaPercent?: boolean,
 ): TableData | undefined {
   if (!data || !measure) return undefined;
 
@@ -323,6 +333,66 @@ function prepareTimeData(
     );
   } else {
     body.push(tableData?.map((v) => sanitizeMeasure(v[measureName])));
+  }
+
+  // Add scenario comparison rows if scenario data is available
+  const hasScenarioComparison = scenarioData && scenarioData.length > 0;
+  if (hasScenarioComparison) {
+    const scenarioTableData = isAllTime
+      ? scenarioData?.slice(1)
+      : scenarioData?.slice(1, -1);
+
+    // Add Main row
+    rowHeaderData.push([
+      { value: "Main" },
+      {
+        value: total?.toString() ?? "",
+        spark: createSparkline(tableData, (v) =>
+          typeof v?.[measureName] === "number" ? v[measureName] : 0,
+        ),
+      },
+    ]);
+    body.push(tableData?.map((v) => sanitizeMeasure(v[measureName])));
+
+    // Add Scenario row
+    rowHeaderData.push([
+      { value: scenarioLabel || "Scenario" },
+      {
+        value: scenarioTotal?.toString() ?? "",
+        spark: createSparkline(scenarioTableData, (v) =>
+          typeof v?.[measureName] === "number" ? v[measureName] : 0,
+        ),
+      },
+    ]);
+    body.push(scenarioTableData?.map((v) => sanitizeMeasure(v[measureName])));
+
+    // Add delta rows if enabled
+    if (showScenarioDeltaPercent) {
+      rowHeaderData.push([{ value: "Scenario Δ%" }]);
+      body.push(
+        tableData?.map((v, i) => {
+          const mainValue = sanitizeMeasure(v[measureName]);
+          const scenarioValue = sanitizeMeasure(scenarioTableData?.[i]?.[measureName]);
+          if (mainValue === null || mainValue === undefined || mainValue === 0) return null;
+          if (scenarioValue === null || scenarioValue === undefined) return null;
+          const percChange = (scenarioValue - mainValue) / mainValue;
+          return numberPartsToString(formatMeasurePercentageDifference(percChange));
+        }),
+      );
+    }
+
+    if (showScenarioDelta) {
+      rowHeaderData.push([{ value: "Scenario Δ" }]);
+      body.push(
+        tableData?.map((v, i) => {
+          const mainValue = sanitizeMeasure(v[measureName]);
+          const scenarioValue = sanitizeMeasure(scenarioTableData?.[i]?.[measureName]);
+          if (mainValue === null || mainValue === undefined) return null;
+          if (scenarioValue === null || scenarioValue === undefined) return null;
+          return scenarioValue - mainValue;
+        }),
+      );
+    }
   }
 
   const rowCount = rowHeaderData.length;
@@ -442,6 +512,26 @@ export function createTimeDimensionDataStore(
         if (comparisonRange && comparisonRange in TIME_COMPARISON)
           comparisonLabel = TIME_COMPARISON[comparisonRange].label;
 
+        // Extract scenario data from time series store
+        const showScenarioComparison =
+          timeSeries?.showScenarioComparison ?? false;
+        const selectedScenario = timeSeries?.selectedScenario;
+        const scenarioDeltaAbsolute = dashboardStore?.scenarioDeltaAbsolute;
+        const scenarioDeltaPercent = dashboardStore?.scenarioDeltaPercent;
+
+        // Get scenario label from metrics view
+        const scenarios = validSpec.data?.metricsView?.scenarios ?? [];
+        const scenarioSpec = scenarios.find((s) => s.name === selectedScenario);
+        const scenarioLabel =
+          scenarioSpec?.label || scenarioSpec?.name || selectedScenario;
+
+        // Check if measure has scenario expression for selected scenario
+        const measureHasScenarioExpression =
+          showScenarioComparison &&
+          selectedScenario &&
+          measure?.scenarioExpressions &&
+          selectedScenario in measure.scenarioExpressions;
+
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
           total as number,
@@ -451,10 +541,30 @@ export function createTimeDimensionDataStore(
           measure,
           comparing === "time",
           isAllTime,
+          // Pass scenario data if measure has scenario expression
+          measureHasScenarioExpression
+            ? timeSeries?.scenarioTimeSeriesData
+            : undefined,
+          measureHasScenarioExpression && timeSeries?.scenarioTotal
+            ? (timeSeries?.scenarioTotal[measureName] as number)
+            : undefined,
+          scenarioLabel,
+          scenarioDeltaAbsolute,
+          scenarioDeltaPercent,
         );
       }
 
-      return { isFetching: false, comparing, data };
+      // Extract scenario state for return
+      const showScenarioComparison = timeSeries?.showScenarioComparison ?? false;
+      const selectedScenario = timeSeries?.selectedScenario;
+
+      return {
+        isFetching: false,
+        comparing,
+        data,
+        showScenarioComparison,
+        selectedScenario,
+      };
     },
   );
 }

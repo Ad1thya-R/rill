@@ -230,6 +230,13 @@ export function getDashboardStateFromProto(
     entity.pivot = blankPivotState();
   }
 
+  if (dashboard.showScenarioComparison) {
+    entity.showScenarioComparison = dashboard.showScenarioComparison;
+  }
+  if (dashboard.selectedScenario) {
+    entity.selectedScenario = dashboard.selectedScenario;
+  }
+
   Object.assign(entity, fromActivePageProto(dashboard));
 
   return entity;

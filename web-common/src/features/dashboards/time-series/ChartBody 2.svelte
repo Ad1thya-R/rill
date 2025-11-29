@@ -10,9 +10,6 @@
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
     MainLineColor,
-    ScenarioLineColor,
-    ScenarioAreaColorGradientDark,
-    ScenarioAreaColorGradientLight,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { splitDataAtForecastCutoff } from "@rilldata/web-common/features/dashboards/time-series/utils";
@@ -33,10 +30,6 @@
   export let scrubEnd;
   /** Optional forecast cutoff date - data after this date renders with dashed lines */
   export let forecastCutoffDate: Date | null = null;
-  /** Scenario comparison data (selected scenario to compare against Main) */
-  export let scenarioData: typeof data = undefined;
-  /** Whether scenario comparison mode is active */
-  export let showScenarioComparison = false;
 
   /** Dash pattern for forecast lines (dotted/dashed style) */
   const FORECAST_DASH_PATTERN = "4,4";
@@ -48,11 +41,6 @@
   const focusedAreaGradient: [string, string] = [
     MainAreaColorGradientDark,
     MainAreaColorGradientLight,
-  ];
-
-  const scenarioAreaGradient: [string, string] = [
-    ScenarioAreaColorGradientDark,
-    ScenarioAreaColorGradientLight,
   ];
 
   $: areaGradientColors = (
@@ -210,38 +198,6 @@
         {yAccessor}
         strokeDasharray={FORECAST_DASH_PATTERN}
       />
-    {/if}
-    <!-- Scenario comparison mode - render selected scenario line alongside Main -->
-    {#if showScenarioComparison && scenarioData?.length > 0}
-      {@const scenarioSplitData = forecastCutoffDate
-        ? splitDataAtForecastCutoff(scenarioData, xAccessor, forecastCutoffDate)
-        : { historical: scenarioData, forecast: [] }}
-      <!-- Historical data (solid line) -->
-      <ChunkedLine
-        lineColor={ScenarioLineColor}
-        areaGradientColors={scenarioAreaGradient}
-        delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-        duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
-          ? 0
-          : 200}
-        data={scenarioSplitData.historical}
-        {xAccessor}
-        {yAccessor}
-      />
-      <!-- Forecast data (dashed line) -->
-      {#if scenarioSplitData.forecast.length > 0}
-        <ChunkedLine
-          lineColor={ScenarioLineColor}
-          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-          duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
-            ? 0
-            : 200}
-          data={scenarioSplitData.forecast}
-          {xAccessor}
-          {yAccessor}
-          strokeDasharray={FORECAST_DASH_PATTERN}
-        />
-      {/if}
     {/if}
     {#if hasSubrangeSelected}
       <ClippedChunkedLine

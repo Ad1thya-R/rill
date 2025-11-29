@@ -45,12 +45,6 @@
     (value: number | string | null | undefined) => string | null | undefined
   >;
 
-  // Scenario comparison props
-  export let showScenarioComparison = false;
-  export let scenarioLabel: string | undefined = undefined;
-  export let scenarioDeltaAbsolute = false;
-  export let scenarioDeltaPercent = false;
-
   function shouldShowContextColumns(measureName: string): boolean {
     return (
       leaderboardShowContextForAllMeasures ||
@@ -71,9 +65,6 @@
     prevValues,
     deltaRels,
     deltaAbs: deltaAbsMap,
-    scenarioValues,
-    scenarioDeltaAbs: scenarioDeltaAbsMap,
-    scenarioDeltaRel: scenarioDeltaRelMap,
     uri,
   } = itemData);
 
@@ -412,108 +403,6 @@
         {/if}
       </td>
     {/if}
-
-    {#if showScenarioComparison}
-      <td
-        role="button"
-        tabindex="0"
-        data-scenario-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(scenarioValues[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = scenarioValues[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = scenarioValues[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        title="[{scenarioLabel || 'Scenario'}] {measureName}"
-      >
-        <FormattedDataType
-          type="INTEGER"
-          value={scenarioValues[measureName]
-            ? formatters[measureName]?.(scenarioValues[measureName])
-            : null}
-          color="text-green-600"
-        />
-      </td>
-    {/if}
-
-    {#if showScenarioComparison && scenarioDeltaAbsolute}
-      <td
-        role="button"
-        tabindex="0"
-        data-scenario-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(scenarioDeltaAbsMap[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = scenarioDeltaAbsMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = scenarioDeltaAbsMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        title="Δ {measureName}"
-      >
-        <FormattedDataType
-          type="INTEGER"
-          value={scenarioDeltaAbsMap[measureName]
-            ? formatters[measureName]?.(scenarioDeltaAbsMap[measureName])
-            : null}
-          color="text-gray-500"
-          customStyle={scenarioDeltaAbsMap[measureName] !== null &&
-          scenarioDeltaAbsMap[measureName] < 0
-            ? "text-red-500"
-            : ""}
-        />
-      </td>
-    {/if}
-
-    {#if showScenarioComparison && scenarioDeltaPercent}
-      <td
-        role="button"
-        tabindex="0"
-        data-scenario-cell
-        on:click={modified({
-          shift: () =>
-            shiftClickHandler(scenarioDeltaRelMap[measureName]?.toString() || ""),
-        })}
-        on:pointerover={() => {
-          const value = scenarioDeltaRelMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        on:focus={() => {
-          const value = scenarioDeltaRelMap[measureName]?.toString() || "";
-          if (value) {
-            cellInspectorStore.updateValue(value);
-          }
-        }}
-        title="Δ% {measureName}"
-      >
-        <PercentageChange
-          value={scenarioDeltaRelMap[measureName]
-            ? formatMeasurePercentageDifference(scenarioDeltaRelMap[measureName] / 100)
-            : null}
-          color="text-gray-500"
-        />
-      </td>
-    {/if}
   {/each}
 </tr>
 
@@ -542,13 +431,8 @@
   }
 
   tr:hover td[data-dimension-cell],
-  tr:hover td[data-comparison-cell],
-  tr:hover td[data-scenario-cell] {
+  tr:hover td[data-comparison-cell] {
     @apply bg-gray-100;
-  }
-
-  td[data-scenario-cell] {
-    @apply bg-surface px-1 truncate;
   }
 
   .external-link-wrapper a {

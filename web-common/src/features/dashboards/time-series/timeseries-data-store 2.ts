@@ -6,7 +6,6 @@ import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/ti
 import {
   createTotalsForMeasure,
   createUnfilteredTotalsForMeasure,
-  createScenarioTotalsForMeasure,
 } from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -49,12 +48,6 @@ export type TimeSeriesDataState = {
   unfilteredTotal?: V1MetricsViewAggregationResponseDataItem;
   comparisonTotal?: V1MetricsViewAggregationResponseDataItem;
   dimensionChartData?: DimensionDataItem[];
-
-  // Scenario comparison data - Main is baseline, scenarioTimeSeriesData is the selected scenario
-  scenarioTimeSeriesData?: TimeSeriesDatum[];
-  scenarioTotal?: V1MetricsViewAggregationResponseDataItem;
-  showScenarioComparison?: boolean;
-  selectedScenario?: string;
 };
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
@@ -63,7 +56,6 @@ export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
-  scenario?: string,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError> {
   return derived(
     [
@@ -95,7 +87,6 @@ export function createMetricsViewTimeSeries(
             timeControls.selectedTimeRange?.interval ??
             timeControls.minTimeGrain,
           timeZone: dashboardStore.selectedTimezone,
-          scenario: scenario,
         },
         {
           query: {
@@ -223,37 +214,6 @@ export function createTimeSeriesDataStore(
         );
       }
 
-      // Scenario time series - fetch data for selected scenario (Main is the baseline)
-      const showScenarioComparison = dashboardStore?.showScenarioComparison;
-      const selectedScenario = dashboardStore?.selectedScenario;
-
-      let scenarioTimeSeries:
-        | CreateQueryResult<V1MetricsViewTimeSeriesResponse, HTTPError>
-        | Writable<null> = writable(null);
-
-      let scenarioTotals:
-        | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>
-        | Writable<null> = writable(null);
-
-      if (showScenarioComparison && selectedScenario && measuresForTimeSeries.length > 0) {
-        // Fetch scenario data - Main data comes from primaryTimeSeries
-        scenarioTimeSeries = createMetricsViewTimeSeries(
-          ctx,
-          measuresForTimeSeries,
-          false,
-          selectedScenario,
-        );
-      }
-
-      if (showScenarioComparison && selectedScenario && measuresForTotals.length > 0) {
-        // Fetch scenario totals
-        scenarioTotals = createScenarioTotalsForMeasure(
-          ctx,
-          measuresForTotals,
-          selectedScenario,
-        );
-      }
-
       return derived(
         [
           primaryTimeSeries,
@@ -262,8 +222,6 @@ export function createTimeSeriesDataStore(
           unfilteredTotals,
           comparisonTotals,
           dimensionTimeSeriesCharts,
-          scenarioTimeSeries,
-          scenarioTotals,
         ],
         ([
           primary,
@@ -272,28 +230,14 @@ export function createTimeSeriesDataStore(
           unfilteredTotal,
           comparisonTotal,
           dimensionChart,
-          scenarioResult,
-          scenarioTotalResult,
         ]) => {
           let preparedTimeSeriesData: TimeSeriesDatum[] = [];
-          let preparedScenarioData: TimeSeriesDatum[] = [];
 
           if (!primary.isFetching && interval) {
             const intervalDuration = TIME_GRAIN[interval]?.duration as Period;
             preparedTimeSeriesData = prepareTimeSeries(
               primary?.data?.data || [],
               comparison?.data?.data || [],
-              intervalDuration,
-              dashboardStore.selectedTimezone,
-            );
-          }
-
-          // Prepare scenario time series data
-          if (scenarioResult && !scenarioResult.isFetching && interval) {
-            const intervalDuration = TIME_GRAIN[interval]?.duration as Period;
-            preparedScenarioData = prepareTimeSeries(
-              scenarioResult?.data?.data || [],
-              [],
               intervalDuration,
               dashboardStore.selectedTimezone,
             );
@@ -312,23 +256,11 @@ export function createTimeSeriesDataStore(
             isError = true;
             error["totals"] = primaryTotal.error.response?.data?.message;
           }
-          if (scenarioResult?.error) {
-            isError = true;
-            error["scenario"] = (
-              scenarioResult.error as HTTPError
-            ).response?.data?.message;
-          }
           const primaryIsFetching = primary.isFetching;
           const primaryTotalIsFetching = primaryTotal.isFetching;
-          const scenarioIsFetching = scenarioResult?.isFetching ?? false;
-          const scenarioTotalIsFetching = scenarioTotalResult?.isFetching ?? false;
 
           return {
-            isFetching:
-              primaryIsFetching ||
-              primaryTotalIsFetching ||
-              scenarioIsFetching ||
-              scenarioTotalIsFetching,
+            isFetching: primaryIsFetching || primaryTotalIsFetching,
             isError,
             error,
             timeSeriesData: preparedTimeSeriesData,
@@ -336,13 +268,6 @@ export function createTimeSeriesDataStore(
             unfilteredTotal: unfilteredTotal?.data?.data?.[0],
             comparisonTotal: comparisonTotal?.data?.data?.[0],
             dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
-            scenarioTimeSeriesData:
-              preparedScenarioData.length > 0
-                ? preparedScenarioData
-                : undefined,
-            scenarioTotal: scenarioTotalResult?.data?.data?.[0],
-            showScenarioComparison: showScenarioComparison ?? false,
-            selectedScenario: selectedScenario,
           };
         },
       ).subscribe(set);

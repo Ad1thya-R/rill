@@ -1484,6 +1484,14 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   cacheKeyTtlSeconds = protoInt64.zero;
 
+  /**
+   * Scenarios define named alternative expression variants for measures.
+   * When a scenario is selected in the UI, measures with scenario_expressions for that scenario will use the alternative expression.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.Scenario scenarios = 33;
+   */
+  scenarios: MetricsViewSpec_Scenario[] = [];
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1515,6 +1523,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 25, name: "cache_enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 26, name: "cache_key_sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 27, name: "cache_key_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 33, name: "scenarios", kind: "message", T: MetricsViewSpec_Scenario, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1914,6 +1923,14 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   dataType?: Type;
 
+  /**
+   * Scenario-specific expressions. Keys are scenario names, values are SQL expressions.
+   * When a scenario is selected, if this measure has an entry for that scenario, the scenario expression is used instead of the main expression.
+   *
+   * @generated from field: map<string, string> scenario_expressions = 16;
+   */
+  scenarioExpressions: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1937,6 +1954,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
+    { no: 16, name: "scenario_expressions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -1953,6 +1971,51 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
 
   static equals(a: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined, b: MetricsViewSpec_Measure | PlainMessage<MetricsViewSpec_Measure> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_Measure, a, b);
+  }
+}
+
+/**
+ * Scenario defines a named alternative expression variant for measures
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.Scenario
+ */
+export class MetricsViewSpec_Scenario extends Message<MetricsViewSpec_Scenario> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string label = 2;
+   */
+  label = "";
+
+  constructor(data?: PartialMessage<MetricsViewSpec_Scenario>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.Scenario";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Scenario {
+    return new MetricsViewSpec_Scenario().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_Scenario {
+    return new MetricsViewSpec_Scenario().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_Scenario {
+    return new MetricsViewSpec_Scenario().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_Scenario | PlainMessage<MetricsViewSpec_Scenario> | undefined, b: MetricsViewSpec_Scenario | PlainMessage<MetricsViewSpec_Scenario> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_Scenario, a, b);
   }
 }
 

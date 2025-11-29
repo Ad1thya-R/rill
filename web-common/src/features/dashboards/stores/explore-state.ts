@@ -115,6 +115,29 @@ export interface ExploreState {
   selectedComparisonDimension?: string;
 
   /**
+   * Whether scenario comparison mode is enabled.
+   * When enabled, the selected scenario measure is appended to all measure displays.
+   */
+  showScenarioComparison?: boolean;
+
+  /**
+   * The selected scenario to compare against Main.
+   * When scenario mode is enabled, this scenario's values appear
+   * alongside the main measure values everywhere (leaderboard, charts, etc.)
+   */
+  selectedScenario?: string;
+
+  /**
+   * Whether to show absolute delta column (Scenario - Main) in scenario comparison mode.
+   */
+  scenarioDeltaAbsolute?: boolean;
+
+  /**
+   * Whether to show percentage delta column ((Scenario - Main) / Main * 100) in scenario comparison mode.
+   */
+  scenarioDeltaPercent?: boolean;
+
+  /**
    * Explicit active page setting.
    * This avoids using presence of value in `selectedDimensionName` or `expandedMeasureName`.
    */

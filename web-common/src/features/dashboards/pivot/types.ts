@@ -20,6 +20,13 @@ export const COMPARISON_PERCENT = "__comparison_percent";
 export const ComparisonModifierSuffixRegex =
   /__comparison_(?:value|delta|percent)/;
 
+// Scenario comparison suffixes
+export const SCENARIO_VALUE = "__scenario_value";
+export const SCENARIO_DELTA = "__scenario_delta";
+export const SCENARIO_PERCENT = "__scenario_percent";
+export const ScenarioModifierSuffixRegex =
+  /__scenario_(?:value|delta|percent)/;
+
 export interface PivotDataState {
   isFetching: boolean;
   error?: PivotQueryError[];
@@ -100,6 +107,11 @@ export interface PivotDataStoreConfig {
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
   isFlat: boolean;
+  // Scenario comparison fields
+  enableScenarioComparison: boolean;
+  selectedScenario: string | undefined;
+  scenarioDeltaAbsolute: boolean;
+  scenarioDeltaPercent: boolean;
 }
 
 export interface PivotAxesData {
@@ -170,4 +182,10 @@ export enum PivotChipType {
   Dimension = "dimension",
 }
 
-export type MeasureType = "measure" | "comparison_delta" | "comparison_percent";
+export type MeasureType =
+  | "measure"
+  | "comparison_delta"
+  | "comparison_percent"
+  | "scenario_value"
+  | "scenario_delta"
+  | "scenario_percent";

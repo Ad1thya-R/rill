@@ -3,7 +3,10 @@
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    type MetricsViewSpecScenario,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
@@ -32,6 +35,7 @@
 
   const {
     dashboardStore,
+    validSpecStore,
     selectors: {
       measures: { allMeasures, visibleMeasures },
       activeMeasure: { selectedMeasureNames },
@@ -40,6 +44,16 @@
       measures: { toggleMeasureVisibility, toggleAllMeasuresVisibility },
     },
   } = getStateManagers();
+
+  // Helper function to get scenario label from name
+  function getScenarioLabel(
+    scenarios: MetricsViewSpecScenario[],
+    scenarioName: string | undefined,
+  ): string {
+    if (!scenarioName) return "Scenario";
+    const scenario = scenarios.find((s) => s.name === scenarioName);
+    return scenario?.label || scenario?.name || scenarioName;
+  }
 
   $: ({ instanceId } = $runtime);
 
@@ -158,6 +172,41 @@
     if (!key) return null;
     return totalsQueryRow?.[key] as number | null;
   };
+
+  // Scenario comparison state
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  $: scenarios = metricsViewSpec.scenarios ?? [];
+  $: showScenarioComparison = $dashboardStore?.showScenarioComparison ?? false;
+  $: selectedScenario = $dashboardStore?.selectedScenario;
+  $: scenarioLabel = getScenarioLabel(scenarios, selectedScenario);
+
+  // Scenario totals query - only runs when scenario comparison is active
+  $: scenarioTotalsQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      measures: $selectedMeasureNames.map((name) => ({ name })),
+      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
+      scenario: selectedScenario,
+    },
+    {
+      query: {
+        enabled:
+          showScenarioComparison &&
+          !!selectedScenario &&
+          $selectedMeasureNames?.length > 0 &&
+          $timeControlsStore.ready &&
+          !!$dashboardStore?.whereFilter,
+      },
+    },
+  );
+  $: scenarioTotalsQueryResult = $scenarioTotalsQuery;
+
+  $: scenarioTotalsQueryRow = scenarioTotalsQueryResult.data?.data?.[0];
+  $: getScenarioValue = (key: string | undefined): number | null => {
+    if (!key || !showScenarioComparison || !selectedScenario) return null;
+    return scenarioTotalsQueryRow?.[key] as number | null;
+  };
 </script>
 
 <svelte:window on:resize={() => calculateGridColumns()} />
@@ -204,6 +253,10 @@
           status={totalsQueryResult.isFetching
             ? EntityStatus.Running
             : EntityStatus.Idle}
+          {showScenarioComparison}
+          scenarioValue={getScenarioValue(measure?.name)}
+          {scenarioLabel}
+          {selectedScenario}
         />
       </div>
     {/each}

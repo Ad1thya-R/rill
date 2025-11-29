@@ -50,7 +50,6 @@
   import ChartBody from "./ChartBody.svelte";
   import MeasureScrub from "./MeasureScrub.svelte";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
-  import ScenarioValueMouseover from "./ScenarioValueMouseover.svelte";
   import {
     getOrderedStartEnd,
     localToTimeZoneOffset,
@@ -82,12 +81,6 @@
   export let validPercTotal: number | null = null;
   /** Optional forecast cutoff date - data after this date renders with dashed lines */
   export let forecastCutoffDate: Date | null = null;
-  /** Scenario comparison data (selected scenario to compare against Main) */
-  export let scenarioData: typeof data = undefined;
-  /** Whether scenario comparison mode is active */
-  export let showScenarioComparison = false;
-  /** Label for the selected scenario */
-  export let scenarioLabel: string | undefined = undefined;
 
   // control point for scrub functionality.
   export let isScrubbing = false;
@@ -161,14 +154,6 @@
 
     yExtentMin = Math.min(yExtentMin, comparisonExtents[0] || yExtentMin);
     yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
-  }
-
-  /** if we have scenario data, factor that into the extents */
-  let scenarioExtents;
-  $: if (showScenarioComparison && scenarioData?.length > 0) {
-    scenarioExtents = extent(scenarioData, (d) => d[yAccessor]);
-    yExtentMin = Math.min(yExtentMin, scenarioExtents[0] || yExtentMin);
-    yExtentMax = Math.max(yExtentMax, scenarioExtents[1] || yExtentMax);
   }
 
   /** if we have dimension data, factor that into the extents */
@@ -356,8 +341,6 @@
         {yAccessor}
         {yExtentMax}
         {forecastCutoffDate}
-        {scenarioData}
-        {showScenarioComparison}
       />
       <line
         class="stroke-theme-200"
@@ -374,106 +357,62 @@
         {timeGrain}
         let:roundedValue
       >
-        {#if showScenarioComparison && scenarioData?.length > 0}
-          <!-- Scenario comparison mode: bisect main and scenario datasets -->
-          <WithBisector
-            {data}
-            callback={(d) => d[xAccessor]}
-            value={roundedValue}
-            let:point={mainPoint}
-          >
-            <WithBisector
-              data={scenarioData || []}
-              callback={(d) => d[xAccessor]}
-              value={roundedValue}
-              let:point={scenarioPoint}
-            >
-              {@const displayPoint = mainPoint || scenarioPoint}
-              {#if displayPoint && inBounds(internalXMin, internalXMax, displayPoint[xAccessor])}
-                <g transition:fly={{ duration: 100, x: -4 }}>
-                  <text
-                    class="fill-gray-700 stroke-surface"
-                    style:paint-order="stroke"
-                    stroke-width="3px"
-                    x={config.plotLeft + config.bodyBuffer + 6}
-                    y={config.plotTop + 10 + config.bodyBuffer}
-                  >
-                    {mouseoverTimeFormat(displayPoint[labelAccessor])}
-                  </text>
-                </g>
-                <g transition:fly={{ duration: 100, x: -4 }}>
-                  <ScenarioValueMouseover
-                    {mainPoint}
-                    {scenarioPoint}
-                    {xAccessor}
-                    {yAccessor}
-                    {mouseoverFormat}
-                    {numberKind}
-                    {scenarioLabel}
-                  />
-                </g>
-              {/if}
-            </WithBisector>
-          </WithBisector>
-        {:else}
-          <!-- Standard mode -->
-          <WithBisector
-            {data}
-            callback={(d) => d[xAccessor]}
-            value={roundedValue}
-            let:point
-          >
-            {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
-              <g transition:fly={{ duration: 100, x: -4 }}>
+        <WithBisector
+          {data}
+          callback={(d) => d[xAccessor]}
+          value={roundedValue}
+          let:point
+        >
+          {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
+            <g transition:fly={{ duration: 100, x: -4 }}>
+              <text
+                class="fill-gray-700 stroke-surface"
+                style:paint-order="stroke"
+                stroke-width="3px"
+                x={config.plotLeft + config.bodyBuffer + 6}
+                y={config.plotTop + 10 + config.bodyBuffer}
+              >
+                {mouseoverTimeFormat(point[labelAccessor])}
+              </text>
+              {#if showComparison && point[`comparison.${labelAccessor}`]}
                 <text
-                  class="fill-gray-700 stroke-surface"
                   style:paint-order="stroke"
                   stroke-width="3px"
+                  class="fill-gray-500 stroke-surface"
                   x={config.plotLeft + config.bodyBuffer + 6}
-                  y={config.plotTop + 10 + config.bodyBuffer}
+                  y={config.plotTop + 24 + config.bodyBuffer}
                 >
-                  {mouseoverTimeFormat(point[labelAccessor])}
+                  {mouseoverTimeFormat(point[`comparison.${labelAccessor}`])} prev.
                 </text>
-                {#if showComparison && point[`comparison.${labelAccessor}`]}
-                  <text
-                    style:paint-order="stroke"
-                    stroke-width="3px"
-                    class="fill-gray-500 stroke-surface"
-                    x={config.plotLeft + config.bodyBuffer + 6}
-                    y={config.plotTop + 24 + config.bodyBuffer}
-                  >
-                    {mouseoverTimeFormat(point[`comparison.${labelAccessor}`])} prev.
-                  </text>
-                {/if}
-              </g>
-              <g transition:fly={{ duration: 100, x: -4 }}>
-                {#if isComparingDimension}
-                  <DimensionValueMouseover
-                    {point}
-                    {xAccessor}
-                    {yAccessor}
-                    {dimensionData}
-                    hasTimeComparison={showComparison}
-                    dimensionValue={hoveredDimensionValue}
-                    {validPercTotal}
-                    {mouseoverFormat}
-                    {hovered}
-                  />
-                {:else}
-                  <MeasureValueMouseover
-                    {point}
-                    {xAccessor}
-                    {yAccessor}
-                    {showComparison}
-                    {mouseoverFormat}
-                    {numberKind}
-                    colorClass="stroke-slate-300"
-                  />
-                {/if}
-              </g>
-            {/if}
-          </WithBisector>
-        {/if}
+              {/if}
+            </g>
+            <g transition:fly={{ duration: 100, x: -4 }}>
+              {#if isComparingDimension}
+                <DimensionValueMouseover
+                  {point}
+                  {xAccessor}
+                  {yAccessor}
+                  {dimensionData}
+                  hasTimeComparison={showComparison}
+                  dimensionValue={hoveredDimensionValue}
+                  {validPercTotal}
+                  {mouseoverFormat}
+                  {hovered}
+                />
+              {:else}
+                <MeasureValueMouseover
+                  {point}
+                  {xAccessor}
+                  {yAccessor}
+                  {showComparison}
+                  {mouseoverFormat}
+                  {numberKind}
+                  colorClass="stroke-slate-300"
+                />
+              {/if}
+            </g>
+          {/if}
+        </WithBisector>
       </WithRoundToTimegrain>
     {/if}
 

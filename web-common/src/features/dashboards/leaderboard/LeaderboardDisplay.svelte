@@ -2,6 +2,7 @@
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import type {
+    MetricsViewSpecScenario,
     V1Expression,
     V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
@@ -41,7 +42,18 @@
     },
     exploreName,
     dashboardStore,
+    validSpecStore,
   } = StateManagers;
+
+  // Helper function to get scenario label from name
+  function getScenarioLabel(
+    scenarios: MetricsViewSpecScenario[],
+    scenarioName: string | undefined,
+  ): string {
+    if (!scenarioName) return "Main";
+    const scenario = scenarios.find((s) => s.name === scenarioName);
+    return scenario?.label || scenario?.name || scenarioName;
+  }
 
   let parentElement: HTMLDivElement;
 
@@ -59,6 +71,20 @@
   );
   $: showDeltaPercent = !!comparisonTimeRange;
 
+  // Scenario comparison state
+  $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  $: scenarios = metricsViewSpec.scenarios ?? [];
+  $: showScenarioComparison = $dashboardStore?.showScenarioComparison ?? false;
+  $: selectedScenario = $dashboardStore?.selectedScenario;
+  $: scenarioLabel = getScenarioLabel(scenarios, selectedScenario);
+  $: scenarioDeltaAbsolute = $dashboardStore?.scenarioDeltaAbsolute ?? false;
+  $: scenarioDeltaPercent = $dashboardStore?.scenarioDeltaPercent ?? false;
+
+  // Calculate number of scenario columns (value + optional deltas)
+  $: scenarioColumnCount = showScenarioComparison
+    ? 1 + (scenarioDeltaAbsolute ? 1 : 0) + (scenarioDeltaPercent ? 1 : 0)
+    : 0;
+
   $: tableWidth =
     dimensionColumnWidth +
     $valueColumn +
@@ -66,7 +92,8 @@
       ? COMPARISON_COLUMN_WIDTH * (showDeltaPercent ? 2 : 1)
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
-        : 0);
+        : 0) +
+    scenarioColumnCount * COMPARISON_COLUMN_WIDTH;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
@@ -114,6 +141,11 @@
               {toggleDimensionValueSelection}
               {toggleComparisonDimension}
               measureLabel={$measureLabel}
+              {showScenarioComparison}
+              {selectedScenario}
+              {scenarioLabel}
+              {scenarioDeltaAbsolute}
+              {scenarioDeltaPercent}
             />
           {/if}
         {/each}

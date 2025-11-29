@@ -38,6 +38,7 @@ type MetricsViewTimeSeries struct {
 	TimeZone        string                       `json:"time_zone,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
 	TimeDimension   string                       `json:"time_dimension,omitempty"`
+	Scenario        string                       `json:"scenario,omitempty"` // Optional scenario name for expression override
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -435,6 +436,7 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery(timeDimension string) 
 	})
 
 	qry.TimeZone = q.TimeZone
+	qry.Scenario = q.Scenario
 
 	return qry, nil
 }

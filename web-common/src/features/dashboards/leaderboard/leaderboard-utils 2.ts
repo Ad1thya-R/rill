@@ -52,23 +52,6 @@ export type LeaderboardItemData = {
   deltaAbs: Record<string, number | null>;
 
   /**
-   * Map of measure name to scenario values (when scenario comparison is active)
-   */
-  scenarioValues: Record<string, number | null>;
-
-  /**
-   * Map of measure name to absolute delta between scenario and main value
-   * Formula: scenarioValue - mainValue
-   */
-  scenarioDeltaAbs: Record<string, number | null>;
-
-  /**
-   * Map of measure name to percentage delta between scenario and main value
-   * Formula: (scenarioValue - mainValue) / |mainValue| * 100
-   */
-  scenarioDeltaRel: Record<string, number | null>;
-
-  /**
    * This tracks the order in which an item was selected,
    * which is used to maintain a mapping between the color
    * of the line in the charts and the icon in the
@@ -84,32 +67,12 @@ export const URI_DIMENSION_SUFFIX = "__rill_uri";
 const finiteOrNull = (v: unknown): number | null =>
   Number.isFinite(v) ? (v as number) : null;
 
-/**
- * Converts an array of aggregation response data items into a Map keyed by dimension value.
- * This enables efficient lookup when merging scenario data with main data.
- */
-export function createDimensionValueMap(
-  data: V1MetricsViewAggregationResponseDataItem[] | undefined,
-  dimensionName: string,
-): Map<string, V1MetricsViewAggregationResponseDataItem> {
-  const map = new Map<string, V1MetricsViewAggregationResponseDataItem>();
-  if (!data) return map;
-  for (const item of data) {
-    const dimValue = item[dimensionName] as string;
-    if (dimValue != null) {
-      map.set(dimValue, item);
-    }
-  }
-  return map;
-}
-
 export function cleanUpComparisonValue(
   v: V1MetricsViewAggregationResponseDataItem,
   dimensionName: string,
   measureNames: string[],
   totals: Record<string, number | null>,
   selectedIndex: number,
-  scenarioData?: V1MetricsViewAggregationResponseDataItem,
 ): LeaderboardItemData {
   const cleanValue: LeaderboardItemData = {
     dimensionValue: v[dimensionName] as string,
@@ -121,9 +84,6 @@ export function cleanUpComparisonValue(
     prevValues: {},
     deltaRels: {},
     deltaAbs: {},
-    scenarioValues: {},
-    scenarioDeltaAbs: {},
-    scenarioDeltaRel: {},
     selectedIndex,
   };
 
@@ -151,22 +111,6 @@ export function cleanUpComparisonValue(
     cleanValue.deltaAbs[measureName] = finiteOrNull(
       v[measureName + ComparisonDeltaAbsoluteSuffix],
     );
-
-    // Scenario values from separate query
-    const scenarioValue = scenarioData
-      ? finiteOrNull(scenarioData[measureName])
-      : null;
-    cleanValue.scenarioValues[measureName] = scenarioValue;
-
-    // Calculate scenario deltas
-    if (scenarioValue !== null && value !== null) {
-      cleanValue.scenarioDeltaAbs[measureName] = scenarioValue - value;
-      cleanValue.scenarioDeltaRel[measureName] =
-        value !== 0 ? ((scenarioValue - value) / Math.abs(value)) * 100 : null;
-    } else {
-      cleanValue.scenarioDeltaAbs[measureName] = null;
-      cleanValue.scenarioDeltaRel[measureName] = null;
-    }
   }
 
   return cleanValue;
@@ -222,8 +166,6 @@ export function prepareLeaderboardItemData(
   // The totals of the measures for the current period,
   // or null if the measure is not valid_percent_of_total
   totals: Record<string, number | null>,
-  // Optional: scenario data indexed by dimension value
-  scenarioDataMap?: Map<string, V1MetricsViewAggregationResponseDataItem>,
 ) {
   if (values?.length === 0 || !values) {
     return {
@@ -248,9 +190,6 @@ export function prepareLeaderboardItemData(
       compareLeaderboardValues(value, dimensionValue),
     );
 
-    // Get scenario data for this dimension value
-    const scenarioData = scenarioDataMap?.get(dimensionValue);
-
     const cleanValue: LeaderboardItemData = {
       dimensionValue,
       uri:
@@ -263,9 +202,6 @@ export function prepareLeaderboardItemData(
       prevValues: {},
       deltaRels: {},
       deltaAbs: {},
-      scenarioValues: {},
-      scenarioDeltaAbs: {},
-      scenarioDeltaRel: {},
       selectedIndex,
     };
 
@@ -285,24 +221,6 @@ export function prepareLeaderboardItemData(
       cleanValue.deltaAbs[measureName] = finiteOrNull(
         value[measureName + ComparisonDeltaAbsoluteSuffix],
       );
-
-      // Scenario values from separate query
-      const scenarioValue = scenarioData
-        ? finiteOrNull(scenarioData[measureName])
-        : null;
-      cleanValue.scenarioValues[measureName] = scenarioValue;
-
-      // Calculate scenario deltas
-      if (scenarioValue !== null && measureValue !== null) {
-        cleanValue.scenarioDeltaAbs[measureName] = scenarioValue - measureValue;
-        cleanValue.scenarioDeltaRel[measureName] =
-          measureValue !== 0
-            ? ((scenarioValue - measureValue) / Math.abs(measureValue)) * 100
-            : null;
-      } else {
-        cleanValue.scenarioDeltaAbs[measureName] = null;
-        cleanValue.scenarioDeltaRel[measureName] = null;
-      }
     }
 
     aboveTheFold.push(cleanValue);

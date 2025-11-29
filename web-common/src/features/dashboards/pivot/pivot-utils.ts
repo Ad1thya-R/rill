@@ -50,6 +50,10 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     enableComparison,
     comparisonTime,
     pivot,
+    enableScenarioComparison,
+    selectedScenario,
+    scenarioDeltaAbsolute,
+    scenarioDeltaPercent,
   } = config;
 
   const { sorting, tableMode: tableModeKey } = pivot;
@@ -60,8 +64,9 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
+  const scenarioKey = `${enableScenarioComparison}_${selectedScenario}_${scenarioDeltaAbsolute}_${scenarioDeltaPercent}`;
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${scenarioKey}`;
 }
 
 /**
@@ -479,6 +484,10 @@ export function prepareMeasureForComparison(
         },
       };
     }
+    // Scenario measures are now filtered out before calling this function
+    // and handled separately via a dedicated scenario query.
+    // If a scenario measure somehow gets here, just return it unchanged.
+    // The query layer will handle the separation.
 
     return measure;
   });

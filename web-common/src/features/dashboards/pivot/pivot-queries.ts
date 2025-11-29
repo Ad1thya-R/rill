@@ -31,6 +31,9 @@ import {
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  SCENARIO_DELTA,
+  SCENARIO_PERCENT,
+  SCENARIO_VALUE,
   type PivotAxesData,
   type PivotDashboardContext,
   type PivotDataStoreConfig,
@@ -38,7 +41,108 @@ import {
 } from "./types";
 
 /**
- * Wrapper function for Aggregate Query API
+ * Check if a measure name has a scenario suffix
+ */
+function hasScenarioSuffix(measureName: string | undefined): boolean {
+  if (!measureName) return false;
+  return (
+    measureName.endsWith(SCENARIO_VALUE) ||
+    measureName.endsWith(SCENARIO_DELTA) ||
+    measureName.endsWith(SCENARIO_PERCENT)
+  );
+}
+
+/**
+ * Get the base measure name by stripping scenario suffixes
+ */
+function getBaseMeasureName(measureName: string): string {
+  return measureName
+    .replace(SCENARIO_VALUE, "")
+    .replace(SCENARIO_DELTA, "")
+    .replace(SCENARIO_PERCENT, "");
+}
+
+/**
+ * Merge scenario query results into main query results.
+ * For each row, adds scenario values and calculates deltas.
+ */
+function mergeScenarioResults(
+  mainData: V1MetricsViewAggregationResponseDataItem[] | undefined,
+  scenarioData: V1MetricsViewAggregationResponseDataItem[] | undefined,
+  scenarioMeasures: V1MetricsViewAggregationMeasure[],
+  dimensions: V1MetricsViewAggregationDimension[],
+): V1MetricsViewAggregationResponseDataItem[] {
+  if (!mainData || mainData.length === 0) return mainData || [];
+  if (!scenarioData || scenarioData.length === 0) return mainData;
+
+  // Create a map of scenario data by dimension key for efficient lookup
+  const scenarioMap = new Map<string, V1MetricsViewAggregationResponseDataItem>();
+  const dimNames = dimensions.map((d) => d.alias || d.name || "");
+
+  for (const row of scenarioData) {
+    const key = dimNames.map((d) => String(row[d] ?? "")).join("|||");
+    scenarioMap.set(key, row);
+  }
+
+  // Merge scenario values into main data
+  return mainData.map((mainRow) => {
+    const key = dimNames.map((d) => String(mainRow[d] ?? "")).join("|||");
+    const scenarioRow = scenarioMap.get(key);
+
+    const mergedRow = { ...mainRow };
+
+    // For each scenario measure, add the value and calculate deltas
+    for (const measure of scenarioMeasures) {
+      const scenarioMeasureName = measure.name;
+      if (!scenarioMeasureName) continue;
+
+      const baseMeasureName = getBaseMeasureName(scenarioMeasureName);
+      const mainValue = mainRow[baseMeasureName] as number | null | undefined;
+      const scenarioValue = scenarioRow
+        ? (scenarioRow[baseMeasureName] as number | null | undefined)
+        : null;
+
+      if (scenarioMeasureName.endsWith(SCENARIO_VALUE)) {
+        // Store scenario value
+        mergedRow[scenarioMeasureName] = scenarioValue ?? null;
+      } else if (scenarioMeasureName.endsWith(SCENARIO_DELTA)) {
+        // Calculate absolute delta: scenario - main
+        if (
+          scenarioValue !== null &&
+          scenarioValue !== undefined &&
+          mainValue !== null &&
+          mainValue !== undefined
+        ) {
+          mergedRow[scenarioMeasureName] = scenarioValue - mainValue;
+        } else {
+          mergedRow[scenarioMeasureName] = null;
+        }
+      } else if (scenarioMeasureName.endsWith(SCENARIO_PERCENT)) {
+        // Calculate percentage delta: (scenario - main) / |main| * 100
+        if (
+          scenarioValue !== null &&
+          scenarioValue !== undefined &&
+          mainValue !== null &&
+          mainValue !== undefined &&
+          mainValue !== 0
+        ) {
+          mergedRow[scenarioMeasureName] =
+            ((scenarioValue - mainValue) / Math.abs(mainValue)) * 100;
+        } else {
+          mergedRow[scenarioMeasureName] = null;
+        }
+      }
+    }
+
+    return mergedRow;
+  });
+}
+
+/**
+ * Wrapper function for Aggregate Query API.
+ * When scenario comparison is enabled and there are scenario measures,
+ * this runs TWO queries: one for main data and one for scenario data,
+ * then merges the results client-side.
  */
 export function createPivotAggregationRowQuery(
   ctx: PivotDashboardContext,
@@ -72,14 +176,72 @@ export function createPivotAggregationRowQuery(
     hasComparison = true;
   }
 
-  return derived(
+  // Separate measures into main measures and scenario measures
+  const scenarioMeasures = measures.filter((m) => hasScenarioSuffix(m.name));
+  const mainMeasures = measures.filter((m) => !hasScenarioSuffix(m.name));
+
+  // Check if we need to run scenario query
+  const needsScenarioQuery =
+    scenarioMeasures.length > 0 &&
+    config.enableScenarioComparison &&
+    !!config.selectedScenario;
+
+  // If no scenario query needed, run normal query
+  if (!needsScenarioQuery) {
+    return derived(
+      [runtime, ctx.metricsViewName],
+      ([$runtime, metricsViewName], set) =>
+        createQueryServiceMetricsViewAggregation(
+          $runtime.instanceId,
+          metricsViewName,
+          {
+            measures: prepareMeasureForComparison(measures),
+            dimensions,
+            where: sanitiseExpression(whereFilter, undefined),
+            timeRange: {
+              start: timeRange?.start ? timeRange.start : config.time.timeStart,
+              end: timeRange?.end ? timeRange.end : config.time.timeEnd,
+            },
+            comparisonTimeRange:
+              hasComparison && comparisonTime
+                ? {
+                    start: comparisonTime.start,
+                    end: comparisonTime.end,
+                  }
+                : undefined,
+            sort,
+            limit,
+            offset,
+          },
+          {
+            query: {
+              enabled: ctx.enabled,
+              placeholderData: keepPreviousData,
+            },
+          },
+          ctx.queryClient,
+        ).subscribe(set),
+    );
+  }
+
+  // Need scenario query - run both main and scenario queries, then merge
+  // Get the base measure names for scenario query
+  const baseMeasureNamesForScenario = [
+    ...new Set(scenarioMeasures.map((m) => getBaseMeasureName(m.name || ""))),
+  ];
+  const scenarioQueryMeasures = baseMeasureNamesForScenario.map((name) => ({
+    name,
+  }));
+
+  // Main query - includes all main measures plus comparison measures
+  const mainQuery = derived(
     [runtime, ctx.metricsViewName],
     ([$runtime, metricsViewName], set) =>
       createQueryServiceMetricsViewAggregation(
         $runtime.instanceId,
         metricsViewName,
         {
-          measures: prepareMeasureForComparison(measures),
+          measures: prepareMeasureForComparison(mainMeasures),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           timeRange: {
@@ -106,6 +268,80 @@ export function createPivotAggregationRowQuery(
         ctx.queryClient,
       ).subscribe(set),
   );
+
+  // Scenario query - gets scenario values for the base measures
+  const scenarioQuery = derived(
+    [runtime, ctx.metricsViewName],
+    ([$runtime, metricsViewName], set) =>
+      createQueryServiceMetricsViewAggregation(
+        $runtime.instanceId,
+        metricsViewName,
+        {
+          measures: scenarioQueryMeasures,
+          dimensions,
+          where: sanitiseExpression(whereFilter, undefined),
+          timeRange: {
+            start: timeRange?.start ? timeRange.start : config.time.timeStart,
+            end: timeRange?.end ? timeRange.end : config.time.timeEnd,
+          },
+          scenario: config.selectedScenario,
+          sort,
+          limit,
+          offset,
+        },
+        {
+          query: {
+            enabled: ctx.enabled,
+            placeholderData: keepPreviousData,
+          },
+        },
+        ctx.queryClient,
+      ).subscribe(set),
+  );
+
+  // Combine the two queries
+  type QueryResult = {
+    data?: V1MetricsViewAggregationResponse;
+    error?: HTTPError;
+    isFetching: boolean;
+    isLoading?: boolean;
+    isSuccess?: boolean;
+    isError?: boolean;
+  };
+
+  return derived(
+    [mainQuery, scenarioQuery],
+    ([mainResult, scenarioResult]: [QueryResult, QueryResult]) => {
+      // If either is still fetching, return fetching state
+      if (mainResult.isFetching || scenarioResult.isFetching) {
+        return {
+          ...mainResult,
+          isFetching: true,
+        };
+      }
+
+      // If main query has error, return it
+      if (mainResult.error) {
+        return mainResult;
+      }
+
+      // Merge scenario data into main data
+      const mergedData = mergeScenarioResults(
+        mainResult.data?.data,
+        scenarioResult.data?.data,
+        scenarioMeasures,
+        dimensions,
+      );
+
+      return {
+        ...mainResult,
+        data: {
+          ...mainResult.data,
+          data: mergedData,
+        },
+      };
+    },
+  ) as CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError>;
 }
 
 /***

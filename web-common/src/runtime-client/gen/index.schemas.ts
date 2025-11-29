@@ -83,6 +83,14 @@ export const MetricsViewSpecDimensionType = {
 
 export type MetricsViewSpecMeasureFormatD3Locale = { [key: string]: unknown };
 
+/**
+ * Scenario-specific expressions. Keys are scenario names, values are SQL expressions.
+When a scenario is selected, if this measure has an entry for that scenario, the scenario expression is used instead of the main expression.
+ */
+export type MetricsViewSpecMeasureScenarioExpressions = {
+  [key: string]: string;
+};
+
 export interface MetricsViewSpecMeasure {
   name?: string;
   displayName?: string;
@@ -99,6 +107,9 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  /** Scenario-specific expressions. Keys are scenario names, values are SQL expressions.
+When a scenario is selected, if this measure has an entry for that scenario, the scenario expression is used instead of the main expression. */
+  scenarioExpressions?: MetricsViewSpecMeasureScenarioExpressions;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -117,6 +128,11 @@ export interface MetricsViewSpecMeasureWindow {
   /** Dimensions to order the window by. Must be present in required_dimensions. */
   orderBy?: MetricsViewSpecDimensionSelector[];
   frameExpression?: string;
+}
+
+export interface MetricsViewSpecScenario {
+  name?: string;
+  label?: string;
 }
 
 export interface NumericHistogramBinsBin {
@@ -1341,6 +1357,8 @@ export interface V1MetricsViewAggregationRequest {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  /** Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression. */
+  scenario?: string;
 }
 
 export type V1MetricsViewAggregationResponseDataItem = {
@@ -1548,6 +1566,9 @@ export interface V1MetricsViewSpec {
   cacheEnabled?: boolean;
   cacheKeySql?: string;
   cacheKeyTtlSeconds?: string;
+  /** Scenarios define named alternative expression variants for measures.
+When a scenario is selected in the UI, measures with scenario_expressions for that scenario will use the alternative expression. */
+  scenarios?: MetricsViewSpecScenario[];
 }
 
 /**
@@ -1613,6 +1634,8 @@ export interface V1MetricsViewTimeSeriesRequest {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression. */
+  scenario?: string;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -2808,6 +2831,8 @@ export type QueryServiceMetricsViewAggregationBody = {
   exact?: boolean;
   fillMissing?: boolean;
   rows?: boolean;
+  /** Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression. */
+  scenario?: string;
 };
 
 export type QueryServiceMetricsViewAnnotationsBody = {
@@ -2902,6 +2927,8 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
   filter?: V1MetricsViewFilter;
   timeDimension?: string;
+  /** Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression. */
+  scenario?: string;
 };
 
 export type QueryServiceMetricsViewToplistBody = {

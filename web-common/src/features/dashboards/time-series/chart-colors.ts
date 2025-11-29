@@ -19,6 +19,13 @@ export const MainAreaColorGradientLight = "var(--color-theme-50)";
 export const TimeComparisonLineColor = "var(--color-gray-500)";
 
 /**
+ * Colors used for scenario comparison - uses green to distinguish from Main (blue theme)
+ */
+export const ScenarioLineColor = "var(--color-green-600)";
+export const ScenarioAreaColorGradientDark = "var(--color-green-300)";
+export const ScenarioAreaColorGradientLight = "var(--color-green-50)";
+
+/**
  * Color used for the unfocused line in time series chart,
  */
 export const LineMutedColor = "var(--color-gray-500)";

@@ -29,6 +29,7 @@ type Query struct {
 	TimeZone            string      `mapstructure:"time_zone"`
 	UseDisplayNames     bool        `mapstructure:"use_display_names"`
 	Rows                bool        `mapstructure:"rows"`
+	Scenario            string      `mapstructure:"scenario"` // Optional scenario name for measure expression override
 }
 
 type Dimension struct {

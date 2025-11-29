@@ -3,6 +3,7 @@ import type {
   MetricsViewSpecDimension,
   RpcStatus,
   V1MetricsViewAggregationResponse,
+  V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
@@ -12,7 +13,7 @@ import {
 } from "../../dimension-table/dimension-table-utils";
 import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
 import { allMeasures, visibleMeasures } from "./measures";
-import { isTimeComparisonActive } from "./time-range";
+import { isTimeComparisonActive, isScenarioComparisonActive } from "./time-range";
 import type { DashboardDataSources } from "./types";
 
 export const primaryDimension = (
@@ -30,8 +31,9 @@ export const virtualizedTableColumns =
   ): ((
     tableRows: Record<string, any>[],
     activeMeasures?: string[],
+    scenarioLabel?: string,
   ) => VirtualizedTableColumns[]) =>
-  (tableRows, activeMeasures) => {
+  (tableRows, activeMeasures, scenarioLabel) => {
     const dimension = primaryDimension(dashData);
 
     if (!dimension) return [];
@@ -57,6 +59,10 @@ export const virtualizedTableColumns =
       maxValues[m.name] = Math.max(...numericValues);
     });
 
+    // Get scenario delta toggle states from dashboard
+    const scenarioDeltaAbsolute = dashData.dashboard?.scenarioDeltaAbsolute ?? false;
+    const scenarioDeltaPercent = dashData.dashboard?.scenarioDeltaPercent ?? false;
+
     return prepareVirtualizedDimTableColumns(
       dashData.dashboard,
       measures,
@@ -65,6 +71,10 @@ export const virtualizedTableColumns =
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
       activeMeasures,
+      isScenarioComparisonActive(dashData),
+      scenarioLabel,
+      scenarioDeltaAbsolute,
+      scenarioDeltaPercent,
     );
   };
 
@@ -77,8 +87,9 @@ export const prepareDimTableRows =
       RpcStatus
     >,
     unfilteredTotal: number | { [key: string]: number },
+    scenarioDataMap?: Map<string, V1MetricsViewAggregationResponseDataItem>,
   ) => DimensionTableRow[]) =>
-  (sortedQuery, unfilteredTotal) => {
+  (sortedQuery, unfilteredTotal, scenarioDataMap) => {
     const dimension = primaryDimension(dashData);
 
     if (!dimension) return [];
@@ -97,6 +108,7 @@ export const prepareDimTableRows =
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
       unfilteredTotal,
+      isScenarioComparisonActive(dashData) ? scenarioDataMap : undefined,
     );
   };
 

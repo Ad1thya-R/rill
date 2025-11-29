@@ -105,6 +105,7 @@
 
   let dataCopy: TimeSeriesDatum[];
   let dimensionDataCopy: DimensionDataItem[] = [];
+  let scenarioDataCopy: TimeSeriesDatum[] | undefined;
 
   $: exploreState = useExploreState(exploreName);
 
@@ -154,6 +155,19 @@
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal as {
     [key: string]: number;
   };
+  $: scenarioTimeSeriesData = $timeSeriesDataStore.scenarioTimeSeriesData;
+  $: scenarioTotals = $timeSeriesDataStore.scenarioTotal as {
+    [key: string]: number;
+  };
+  $: showScenarioComparison = $timeSeriesDataStore.showScenarioComparison;
+  $: selectedScenario = $timeSeriesDataStore.selectedScenario;
+
+  // Get scenario label from the spec
+  $: scenarios = $validSpecStore.data?.metricsView?.scenarios ?? [];
+  $: scenarioLabel = selectedScenario
+    ? scenarios.find((s) => s.name === selectedScenario)?.label ||
+      selectedScenario
+    : undefined;
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
@@ -165,6 +179,13 @@
     dataCopy = $timeSeriesDataStore.timeSeriesData;
   }
   $: formattedData = dataCopy;
+
+  $: if ($timeSeriesDataStore?.scenarioTimeSeriesData !== undefined) {
+    scenarioDataCopy = $timeSeriesDataStore.scenarioTimeSeriesData;
+  } else if (!showScenarioComparison) {
+    scenarioDataCopy = undefined;
+  }
+  $: formattedScenarioData = scenarioDataCopy;
 
   $: if (
     $timeSeriesDataStore?.dimensionChartData?.length ||
@@ -453,6 +474,9 @@
         {@const comparisonValue = measure.name
           ? totalsComparisons?.[measure.name]
           : undefined}
+        {@const scenarioValue = measure.name
+          ? scenarioTotals?.[measure.name] ?? null
+          : null}
         {@const isValidPercTotal = measure.name
           ? $isMeasureValidPercentOfTotal(measure.name)
           : false}
@@ -477,6 +501,10 @@
             dimensionComparisonData={measureDimensionData}
             yAccessor={measure.name}
             {showDimensionValues}
+            showScenarioComparison={showScenarioComparison ?? false}
+            {scenarioValue}
+            scenarioLabel={scenarioLabel ?? ""}
+            {selectedScenario}
           />
 
           {#if hasTimeseriesError}
@@ -572,6 +600,9 @@
               validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
                 ? bigNum
                 : null}
+              scenarioData={formattedScenarioData}
+              {showScenarioComparison}
+              {scenarioLabel}
               mouseoverTimeFormat={(value) => {
                 /** format the date according to the time grain */
 

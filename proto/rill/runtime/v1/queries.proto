@@ -437,6 +437,8 @@ message MetricsViewAggregationRequest {
   bool fill_missing = 21;
   // Optional. Defaults to false. Used to fetch rows from underlying model
   bool rows = 22;
+  // Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression.
+  string scenario = 23;
 }
 
 message MetricsViewAggregationResponse {
@@ -687,6 +689,8 @@ message MetricsViewTimeSeriesRequest {
   int32 priority = 8;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
   string time_dimension = 15; // Optional. If not specified, falls back to the primary time dimension in the metrics view spec
+  // Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression.
+  string scenario = 16;
 }
 
 message MetricsViewTimeSeriesResponse {

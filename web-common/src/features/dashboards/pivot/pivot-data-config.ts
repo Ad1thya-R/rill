@@ -18,6 +18,9 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
+  SCENARIO_DELTA,
+  SCENARIO_PERCENT,
+  SCENARIO_VALUE,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
 } from "./types";
@@ -56,6 +59,10 @@ export function getPivotConfig(
           enableComparison: false,
           searchText,
           isFlat: false,
+          enableScenarioComparison: false,
+          selectedScenario: undefined,
+          scenarioDeltaAbsolute: false,
+          scenarioDeltaPercent: false,
         };
       }
 
@@ -93,6 +100,20 @@ export function getPivotConfig(
       const { dimension: colDimensions, measure: colMeasures } =
         splitPivotChips(dashboardStore.pivot.columns);
 
+      // Scenario comparison settings
+      const enableScenarioComparison =
+        dashboardStore.showScenarioComparison ?? false;
+      const selectedScenario = dashboardStore.selectedScenario;
+      const scenarioDeltaAbsolute =
+        dashboardStore.scenarioDeltaAbsolute ?? false;
+      const scenarioDeltaPercent = dashboardStore.scenarioDeltaPercent ?? false;
+
+      // Get all measures for checking scenario expressions
+      const allMeasuresList = allMeasures({
+        validMetricsView: metricsView,
+        validExplore: explore,
+      });
+
       const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
@@ -103,6 +124,27 @@ export function getPivotConfig(
             `${measureName}${COMPARISON_PERCENT}`,
           );
         }
+
+        // Add scenario columns only for measures that have scenario expressions for the selected scenario
+        if (enableScenarioComparison && selectedScenario) {
+          const measure = allMeasuresList.find((mes) => mes.name === measureName);
+          const hasScenarioExpression =
+            measure?.scenarioExpressions &&
+            selectedScenario in measure.scenarioExpressions;
+
+          if (hasScenarioExpression) {
+            // Add scenario value column
+            group.push(`${measureName}${SCENARIO_VALUE}`);
+            // Add delta columns based on toggles
+            if (scenarioDeltaAbsolute) {
+              group.push(`${measureName}${SCENARIO_DELTA}`);
+            }
+            if (scenarioDeltaPercent) {
+              group.push(`${measureName}${SCENARIO_PERCENT}`);
+            }
+          }
+        }
+
         return group;
       });
 
@@ -136,10 +178,7 @@ export function getPivotConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: allMeasures({
-          validMetricsView: metricsView,
-          validExplore: explore,
-        }),
+        allMeasures: allMeasuresList,
         allDimensions: allDimensions({
           validMetricsView: metricsView,
           validExplore: explore,
@@ -154,6 +193,10 @@ export function getPivotConfig(
         time,
         searchText,
         isFlat,
+        enableScenarioComparison,
+        selectedScenario,
+        scenarioDeltaAbsolute,
+        scenarioDeltaPercent,
       };
 
       const currentKey = getPivotConfigKey(config);

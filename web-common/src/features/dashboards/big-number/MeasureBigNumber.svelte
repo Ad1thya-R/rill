@@ -21,6 +21,7 @@
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
   import DimensionComparisonValues from "./DimensionComparisonValues.svelte";
+  import ScenarioComparisonValues from "./ScenarioComparisonValues.svelte";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
   export let measure: MetricsViewSpecMeasure;
@@ -39,10 +40,30 @@
   /** When true, shows individual dimension values in big number during comparison mode */
   export let showDimensionValues: boolean = false;
 
+  // Scenario comparison mode props
+  export let showScenarioComparison = false;
+  export let scenarioValue: number | null = null;
+  export let scenarioLabel = "";
+  export let selectedScenario: string | undefined = undefined;
+
   $: isInDimensionComparisonMode =
     showDimensionValues &&
     dimensionComparisonData &&
     dimensionComparisonData.length > 0;
+
+  // Only show scenario comparison if:
+  // 1. showScenarioComparison is true
+  // 2. Not in dimension comparison mode
+  // 3. The measure has a scenario expression for the selected scenario
+  $: measureHasScenarioExpression =
+    selectedScenario &&
+    measure?.scenarioExpressions &&
+    selectedScenario in measure.scenarioExpressions;
+
+  $: isInScenarioComparisonMode =
+    showScenarioComparison &&
+    !isInDimensionComparisonMode &&
+    measureHasScenarioExpression;
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -174,6 +195,15 @@
           {measure}
           dimensionData={dimensionComparisonData}
           {yAccessor}
+        />
+      {:else if isInScenarioComparisonMode && status === EntityStatus.Idle}
+        <!-- Scenario comparison mode: show Main vs Scenario values -->
+        <ScenarioComparisonValues
+          {measure}
+          mainValue={value}
+          {scenarioValue}
+          {scenarioLabel}
+          isFetching={status === EntityStatus.Running}
         />
       {:else if value !== null && value !== undefined && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>

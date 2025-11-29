@@ -33,7 +33,11 @@ type MetricsViewYAML struct {
 	SmallestTimeGrain string           `yaml:"smallest_time_grain"`
 	FirstDayOfWeek    uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear  uint32           `yaml:"first_month_of_year"`
-	Dimensions        []*struct {
+	Scenarios         []*struct {
+		Name  string `yaml:"name"`
+		Label string `yaml:"label"`
+	} `yaml:"scenarios"`
+	Dimensions []*struct {
 		Name                    string
 		DisplayName             string `yaml:"display_name"`
 		Label                   string // Deprecated: use display_name
@@ -51,21 +55,22 @@ type MetricsViewYAML struct {
 		SmallestTimeGrain       string `yaml:"smallest_time_grain"`
 	}
 	Measures []*struct {
-		Name                string
-		DisplayName         string `yaml:"display_name"`
-		Label               string // Deprecated: use display_name
-		Description         string
-		Type                string
-		Expression          string
-		Window              *MetricsViewMeasureWindow
-		Per                 MetricsViewFieldSelectorsYAML
-		Requires            MetricsViewFieldSelectorsYAML
-		FormatPreset        string         `yaml:"format_preset"`
-		FormatD3            string         `yaml:"format_d3"`
-		FormatD3Locale      map[string]any `yaml:"format_d3_locale"`
-		Ignore              bool           `yaml:"ignore"` // Deprecated
-		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
-		TreatNullsAs        string         `yaml:"treat_nulls_as"`
+		Name                 string
+		DisplayName          string `yaml:"display_name"`
+		Label                string // Deprecated: use display_name
+		Description          string
+		Type                 string
+		Expression           string
+		ScenarioExpressions  map[string]string `yaml:"scenario_expressions"`
+		Window               *MetricsViewMeasureWindow
+		Per                  MetricsViewFieldSelectorsYAML
+		Requires             MetricsViewFieldSelectorsYAML
+		FormatPreset         string         `yaml:"format_preset"`
+		FormatD3             string         `yaml:"format_d3"`
+		FormatD3Locale       map[string]any `yaml:"format_d3_locale"`
+		Ignore               bool           `yaml:"ignore"` // Deprecated
+		ValidPercentOfTotal  bool           `yaml:"valid_percent_of_total"`
+		TreatNullsAs         string         `yaml:"treat_nulls_as"`
 	}
 	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"` // used when Parent is set
 	ParentMeasures   *FieldSelectorYAML `yaml:"parent_measures"`   // used when Parent is set
@@ -564,6 +569,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			DisplayName:         measure.DisplayName,
 			Description:         measure.Description,
 			Expression:          measure.Expression,
+			ScenarioExpressions: measure.ScenarioExpressions,
 			Type:                typ,
 			Window:              window,
 			PerDimensions:       perDimensions,
@@ -603,6 +609,41 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	// 0 is default and type is uint32
 	if tmp.FirstMonthOfYear > 12 {
 		return fmt.Errorf("invalid first month of year %d, must be between 1 and 12", tmp.FirstMonthOfYear)
+	}
+
+	// Parse and validate scenarios
+	scenarioNames := make(map[string]bool)
+	scenarios := make([]*runtimev1.MetricsViewSpec_Scenario, 0, len(tmp.Scenarios))
+	for _, s := range tmp.Scenarios {
+		if s == nil {
+			continue
+		}
+		if s.Name == "" {
+			return fmt.Errorf("scenario must have a name")
+		}
+		lower := strings.ToLower(s.Name)
+		if scenarioNames[lower] {
+			return fmt.Errorf("duplicate scenario name %q", s.Name)
+		}
+		scenarioNames[lower] = true
+
+		label := s.Label
+		if label == "" {
+			label = ToDisplayName(s.Name)
+		}
+		scenarios = append(scenarios, &runtimev1.MetricsViewSpec_Scenario{
+			Name:  s.Name,
+			Label: label,
+		})
+	}
+
+	// Validate scenario_expressions keys reference valid scenarios
+	for _, m := range measures {
+		for scenarioName := range m.ScenarioExpressions {
+			if !scenarioNames[strings.ToLower(scenarioName)] {
+				return fmt.Errorf(`measure %q has scenario_expression for unknown scenario %q`, m.Name, scenarioName)
+			}
+		}
 	}
 
 	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
@@ -752,6 +793,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 	spec.Dimensions = dimensions
 	spec.Measures = measures
+	spec.Scenarios = scenarios
 
 	// if time dimension is not defined in the dimensions list but is defined in the `timeseries` key, we prepend it to the dimensions list here
 	if !timeDimSeenInDimList && tmp.TimeDimension != "" {

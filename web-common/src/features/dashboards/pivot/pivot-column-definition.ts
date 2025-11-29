@@ -26,6 +26,9 @@ import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
   PivotChipType,
+  SCENARIO_DELTA,
+  SCENARIO_PERCENT,
+  SCENARIO_VALUE,
   type MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
@@ -199,6 +202,8 @@ export function getMeasureColumnProps(
     let label: string = "";
     let icon: ComponentType<SvelteComponent> | undefined;
     let type: MeasureType = "measure";
+    let isScenarioColumn = false;
+
     if (m.endsWith(COMPARISON_DELTA)) {
       icon = DeltaChange;
       label = "Δ";
@@ -209,7 +214,28 @@ export function getMeasureColumnProps(
       label = "Δ %";
       type = "comparison_percent";
       measureName = m.replace(COMPARISON_PERCENT, "");
+    } else if (m.endsWith(SCENARIO_VALUE)) {
+      // Scenario value column (e.g., "Scenario" label)
+      label = "[Scenario]";
+      type = "scenario_value";
+      measureName = m.replace(SCENARIO_VALUE, "");
+      isScenarioColumn = true;
+    } else if (m.endsWith(SCENARIO_DELTA)) {
+      // Scenario delta column (Scenario - Main)
+      icon = DeltaChange;
+      label = "Scenario Δ";
+      type = "scenario_delta";
+      measureName = m.replace(SCENARIO_DELTA, "");
+      isScenarioColumn = true;
+    } else if (m.endsWith(SCENARIO_PERCENT)) {
+      // Scenario percent column ((Scenario - Main) / Main * 100)
+      icon = DeltaChangePercentage;
+      label = "Scenario Δ%";
+      type = "scenario_percent";
+      measureName = m.replace(SCENARIO_PERCENT, "");
+      isScenarioColumn = true;
     }
+
     const measure = config.allMeasures.find(
       (measure) => measure.name === measureName,
     );
@@ -218,8 +244,13 @@ export function getMeasureColumnProps(
       console.warn(`Measure ${m} not found in config.allMeasures`);
     }
 
+    // For scenario value column, prepend measure name if not already in label
+    const displayLabel = isScenarioColumn && type === "scenario_value"
+      ? `${measure?.displayName || measureName} [Scenario]`
+      : label || measure?.displayName || measureName;
+
     return {
-      label: label || measure?.displayName || measureName,
+      label: displayLabel,
       formatter: measure
         ? createMeasureValueFormatter<null | undefined>(measure)
         : (v: string | number | null | undefined) => v?.toString(),

@@ -2511,6 +2511,13 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    */
   timeDimension = "";
 
+  /**
+   * Optional. Scenario name. If specified, measures with scenario_expressions for this scenario will use the alternative expression.
+   *
+   * @generated from field: string scenario = 16;
+   */
+  scenario = "";
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2533,6 +2540,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 15, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "scenario", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesRequest {

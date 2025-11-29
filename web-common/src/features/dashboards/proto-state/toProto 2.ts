@@ -180,13 +180,6 @@ export function getProtoFromDashboardState(
     Object.assign(state, toPivotProto(exploreState.pivot));
   }
 
-  if (exploreState.showScenarioComparison) {
-    state.showScenarioComparison = exploreState.showScenarioComparison;
-  }
-  if (exploreState.selectedScenario) {
-    state.selectedScenario = exploreState.selectedScenario;
-  }
-
   Object.assign(state, toActivePageProto(exploreState));
 
   const message = new DashboardState(state);

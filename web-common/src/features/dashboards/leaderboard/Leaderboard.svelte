@@ -34,6 +34,7 @@
   import {
     cleanUpComparisonValue,
     compareLeaderboardValues,
+    createDimensionValueMap,
     getLeaderboardMaxValues,
     getSort,
     prepareLeaderboardItemData,
@@ -84,6 +85,13 @@
   export let toggleComparisonDimension: (
     dimensionName: string | undefined,
   ) => void = () => {};
+
+  // Scenario comparison props
+  export let showScenarioComparison = false;
+  export let selectedScenario: string | undefined = undefined;
+  export let scenarioLabel: string | undefined = undefined;
+  export let scenarioDeltaAbsolute = false;
+  export let scenarioDeltaPercent = false;
 
   onMount(() => {
     if (!parentElement) return;
@@ -200,8 +208,36 @@
     },
   );
 
+  // Scenario query (uses selectedScenario parameter)
+  $: scenarioQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      dimensions: [{ name: dimensionName }],
+      measures: leaderboardMeasureNames.map((name) => ({ name })),
+      timeRange,
+      sort,
+      where,
+      limit: queryLimit.toString(),
+      offset: "0",
+      scenario: selectedScenario || undefined,
+    },
+    {
+      query: {
+        enabled: visible && timeControlsReady && showScenarioComparison && !!selectedScenario,
+      },
+    },
+  );
+
   $: ({ data: sortedData, isFetching, isLoading, isPending } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
+  $: ({ data: scenarioData } = $scenarioQuery);
+
+  // Create map for efficient lookup of scenario data by dimension value
+  $: scenarioDataMap = createDimensionValueMap(
+    scenarioData?.data,
+    dimensionName,
+  );
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
@@ -220,6 +256,7 @@
       slice,
       $selectedValues?.data ?? [],
       leaderboardTotals,
+      showScenarioComparison ? scenarioDataMap : undefined,
     ));
 
   $: belowTheFoldDataLimit = maxValuesToShow - aboveTheFold.length;
@@ -271,17 +308,19 @@
         }))
         .slice(0, belowTheFoldDataLimit);
 
-  $: belowTheFoldRows = belowTheFoldData.map((item) =>
-    cleanUpComparisonValue(
+  $: belowTheFoldRows = belowTheFoldData.map((item) => {
+    const dimValue = item[dimensionName] as string;
+    return cleanUpComparisonValue(
       item,
       dimensionName,
       leaderboardMeasureNames,
       leaderboardTotals,
       $selectedValues?.data?.findIndex((value) =>
-        compareLeaderboardValues(value, item[dimensionName]),
+        compareLeaderboardValues(value, dimValue),
       ) ?? -1,
-    ),
-  );
+      showScenarioComparison ? scenarioDataMap.get(dimValue) : undefined,
+    );
+  });
 
   $: isTimeComparisonActive = !!comparisonTimeRange;
 
@@ -292,6 +331,12 @@
       ? leaderboardMeasureNames.length * // For each measure
         ((isValidPercentOfTotal(leaderboardSortByMeasureName) ? 1 : 0) + // Percent of total column
           (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
+      : 0) +
+    (showScenarioComparison
+      ? leaderboardMeasureNames.length * // For each measure
+        (1 + // Scenario value column
+          (scenarioDeltaAbsolute ? 1 : 0) + // Scenario delta absolute column
+          (scenarioDeltaPercent ? 1 : 0)) // Scenario delta percent column
       : 0);
 
   // Calculate maximum values for relative magnitude bar sizing
@@ -339,6 +384,24 @@
             style:width="{COMPARISON_COLUMN_WIDTH}px"
           />
         {/if}
+        {#if showScenarioComparison}
+          <col
+            data-scenario-column
+            style:width="{COMPARISON_COLUMN_WIDTH}px"
+          />
+        {/if}
+        {#if showScenarioComparison && scenarioDeltaAbsolute}
+          <col
+            data-scenario-delta-column
+            style:width="{COMPARISON_COLUMN_WIDTH}px"
+          />
+        {/if}
+        {#if showScenarioComparison && scenarioDeltaPercent}
+          <col
+            data-scenario-delta-percent-column
+            style:width="{COMPARISON_COLUMN_WIDTH}px"
+          />
+        {/if}
       {/each}
     </colgroup>
 
@@ -362,6 +425,10 @@
       {toggleComparisonDimension}
       {leaderboardSortByMeasureName}
       {measureLabel}
+      {showScenarioComparison}
+      {scenarioLabel}
+      {scenarioDeltaAbsolute}
+      {scenarioDeltaPercent}
     />
 
     <tbody>
@@ -388,6 +455,10 @@
             {formatters}
             {dimensionColumnWidth}
             {maxValues}
+            {showScenarioComparison}
+            {scenarioLabel}
+            {scenarioDeltaAbsolute}
+            {scenarioDeltaPercent}
           />
         {/each}
       </DelayedLoadingRows>
@@ -410,6 +481,10 @@
           {formatters}
           {dimensionColumnWidth}
           {maxValues}
+          {showScenarioComparison}
+          {scenarioLabel}
+          {scenarioDeltaAbsolute}
+          {scenarioDeltaPercent}
         />
       {/each}
     </tbody>

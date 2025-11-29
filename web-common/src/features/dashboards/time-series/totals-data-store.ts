@@ -60,6 +60,48 @@ export function createTotalsForMeasure(
   );
 }
 
+export function createScenarioTotalsForMeasure(
+  ctx: StateManagers,
+  measures: string[],
+  scenario: string,
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
+  return derived(
+    [
+      ctx.runtime,
+      ctx.metricsViewName,
+      useTimeControlStore(ctx),
+      ctx.dashboardStore,
+    ],
+    ([runtime, metricsViewName, timeControls, dashboard], set) =>
+      createQueryServiceMetricsViewAggregation(
+        runtime.instanceId,
+        metricsViewName,
+        {
+          measures: measures.map((measure) => ({ name: measure })),
+          where: sanitiseExpression(
+            mergeDimensionAndMeasureFilters(
+              dashboard.whereFilter,
+              dashboard.dimensionThresholdFilters,
+            ),
+            undefined,
+          ),
+          timeRange: {
+            start: timeControls.timeStart,
+            end: timeControls.timeEnd,
+          },
+          scenario: scenario,
+        },
+        {
+          query: {
+            enabled: !!timeControls.ready && !!ctx.dashboardStore && !!scenario,
+            refetchOnMount: false,
+          },
+        },
+        ctx.queryClient,
+      ).subscribe(set),
+  );
+}
+
 export function createUnfilteredTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],

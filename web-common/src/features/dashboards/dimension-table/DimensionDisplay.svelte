@@ -19,7 +19,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getComparisonRequestMeasures } from "../dashboard-utils";
   import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
-  import { getSort } from "../leaderboard/leaderboard-utils";
+  import { createDimensionValueMap, getSort } from "../leaderboard/leaderboard-utils";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
   import { dimensionSearchText } from "../stores/dashboard-stores";
@@ -40,6 +40,16 @@
   export let timeControlsReady: boolean;
   export let dimension: MetricsViewSpecDimension;
   export let hideStartPivotButton = false;
+
+  // Helper function to get scenario label from name
+  function getScenarioLabel(
+    scenarios: { name?: string; label?: string }[],
+    scenarioName: string | undefined,
+  ): string {
+    if (!scenarioName) return "Main";
+    const scenario = scenarios.find((s) => s.name === scenarioName);
+    return scenario?.label || scenario?.name || scenarioName;
+  }
 
   const {
     selectors: {
@@ -63,6 +73,12 @@
   } = getStateManagers();
 
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+
+  // Scenario comparison state from dashboard store
+  $: scenarios = metricsViewSpec.scenarios ?? [];
+  $: showScenarioComparison = $dashboardStore?.showScenarioComparison ?? false;
+  $: selectedScenario = $dashboardStore?.selectedScenario;
+  $: scenarioLabel = getScenarioLabel(scenarios, selectedScenario);
 
   $: ({ name: dimensionName = "" } = dimension);
 
@@ -175,7 +191,34 @@
     },
   );
 
-  $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
+  // Scenario query (separate query with scenario parameter)
+  $: scenarioQuery = createQueryServiceMetricsViewAggregation(
+    instanceId,
+    metricsViewName,
+    {
+      dimensions: [{ name: dimensionName }],
+      measures: visibleMeasureNames.map((name) => ({ name })),
+      timeRange,
+      sort,
+      where,
+      limit: queryLimit.toString(),
+      offset: "0",
+      scenario: selectedScenario || undefined,
+    },
+    {
+      query: {
+        enabled: timeControlsReady && !!filterSet && showScenarioComparison && !!selectedScenario,
+      },
+    },
+  );
+
+  // Create map for efficient lookup of scenario data by dimension value
+  $: scenarioDataMap = createDimensionValueMap(
+    $scenarioQuery?.data?.data,
+    dimensionName,
+  );
+
+  $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal, showScenarioComparison ? scenarioDataMap : undefined);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
     $selectedValues.data?.includes(row[dimensionName] as string),
@@ -184,6 +227,7 @@
   $: columns = $virtualizedTableColumns(
     tableRows,
     $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
+    showScenarioComparison ? scenarioLabel : undefined,
   );
 
   function onSelectItem(event) {

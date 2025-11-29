@@ -116,11 +116,13 @@ export function computePercentOfTotal(
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasure,
+  scenarioLabel?: string,
 ): {
   component: typeof SvelteComponent<any>;
   type: string;
   format: string;
   description: string;
+  label?: string;
 } {
   if (measureName.includes("_delta_perc")) {
     return {
@@ -142,6 +144,33 @@ export function getComparisonProperties(
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percent of total",
+    };
+  } else if (measureName.includes("_scenario_delta_perc")) {
+    // Scenario delta percentage column
+    return {
+      component: DeltaChangePercentage,
+      type: "RILL_PERCENTAGE_CHANGE",
+      format: FormatPreset.PERCENTAGE,
+      description: `Percentage change from main to scenario: ${scenarioLabel || "Scenario"}`,
+      label: "Δ%",
+    };
+  } else if (measureName.includes("_scenario_delta")) {
+    // Scenario delta absolute column
+    return {
+      component: DeltaChange,
+      type: "RILL_CHANGE",
+      format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
+      description: `Change from main to scenario: ${scenarioLabel || "Scenario"}`,
+      label: "Δ",
+    };
+  } else if (measureName.includes("_scenario")) {
+    // Scenario value column - use the measure's format
+    return {
+      component: DeltaChange, // Use DeltaChange component for now; could be customized
+      type: "INT",
+      format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
+      description: `Value under scenario: ${scenarioLabel || "Scenario"}`,
+      label: scenarioLabel || "Scenario",
     };
   }
   throw new Error(
@@ -197,6 +226,8 @@ export function estimateColumnSizes(
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
     if (column.name.includes("percent_of_total"))
       return config.comparisonColumnWidth;
+    if (column.name.includes("_scenario"))
+      return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
 
     const largestStringLength =
@@ -244,6 +275,10 @@ export function prepareVirtualizedDimTableColumns(
   timeComparison: boolean,
   validPercentOfTotal: boolean,
   activeMeasures?: string[],
+  scenarioComparison: boolean = false,
+  scenarioLabel?: string,
+  scenarioDeltaAbsolute: boolean = false,
+  scenarioDeltaPercent: boolean = false,
 ): VirtualizedTableColumns[] {
   const sortType = exploreState.dashboardSortType;
   const sortDirection = exploreState.sortDirection;
@@ -277,6 +312,9 @@ export function prepareVirtualizedDimTableColumns(
             timeComparison,
             validPercentOfTotal,
             measure,
+            scenarioComparison,
+            scenarioDeltaAbsolute,
+            scenarioDeltaPercent,
           );
         }
       });
@@ -287,6 +325,9 @@ export function prepareVirtualizedDimTableColumns(
         timeComparison,
         validPercentOfTotal,
         selectedMeasure,
+        scenarioComparison,
+        scenarioDeltaAbsolute,
+        scenarioDeltaPercent,
       );
     }
   }
@@ -362,12 +403,13 @@ export function prepareVirtualizedDimTableColumns(
           sorted,
         };
       } else if (selectedMeasure !== undefined) {
-        // Handle delta, delta_perc, and percent_of_total columns
-        const comparison = getComparisonProperties(name, selectedMeasure);
+        // Handle delta, delta_perc, percent_of_total, and scenario columns
+        const comparison = getComparisonProperties(name, selectedMeasure, scenarioLabel);
         columnOut = {
           name,
           type: comparison.type,
-          label: comparison.component,
+          // Use string label if provided (e.g., for scenario), otherwise use component
+          label: comparison.label || comparison.component,
           description: comparison.description,
           enableResize: false,
           format: comparison.format,
@@ -394,6 +436,9 @@ export function addContextColumnNames(
   timeComparison: boolean,
   validPercentOfTotal: boolean,
   selectedMeasure: MetricsViewSpecMeasure,
+  scenarioComparison: boolean = false,
+  scenarioDeltaAbsolute: boolean = false,
+  scenarioDeltaPercent: boolean = false,
 ) {
   const name = selectedMeasure?.name;
   if (!name) return;
@@ -421,6 +466,26 @@ export function addContextColumnNames(
     // Add percent change (if measure is not already a percentage)
     if (!isPercent) {
       columnNames.splice(nextIndex, 0, `${name}_delta_perc`);
+      nextIndex++;
+    }
+  }
+
+  // 3. Add scenario columns if scenario comparison is enabled
+  if (scenarioComparison) {
+    // Add scenario value column
+    columnNames.splice(nextIndex, 0, `${name}_scenario`);
+    nextIndex++;
+
+    // Add scenario delta absolute column if enabled
+    if (scenarioDeltaAbsolute) {
+      columnNames.splice(nextIndex, 0, `${name}_scenario_delta`);
+      nextIndex++;
+    }
+
+    // Add scenario delta percent column if enabled
+    if (scenarioDeltaPercent && !isPercent) {
+      columnNames.splice(nextIndex, 0, `${name}_scenario_delta_perc`);
+      nextIndex++;
     }
   }
 }
@@ -450,6 +515,7 @@ export function prepareDimensionTableRows(
   addDeltas: boolean,
   addPercentOfTotal: boolean,
   unfilteredTotal: number | { [key: string]: number },
+  scenarioDataMap?: Map<string, V1MetricsViewAggregationResponseDataItem>,
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
 
@@ -527,6 +593,50 @@ export function prepareDimensionTableRows(
             rowOut[`__formatted_${measure.name}_percent_of_total`] =
               formatMeasurePercentageDifference(value / total);
           }
+        });
+      }
+
+      // Process scenario data if available
+      if (scenarioDataMap) {
+        const dimValue = row[dimensionColumn] as string;
+        const scenarioRow = scenarioDataMap.get(dimValue);
+
+        allMeasuresForSpec.forEach((measure) => {
+          if (!measure.name) return;
+
+          const mainValue = castUnknownToNumberOrNull(row[measure.name]);
+          const scenarioValue = scenarioRow
+            ? castUnknownToNumberOrNull(scenarioRow[measure.name])
+            : null;
+
+          // Scenario value column
+          rowOut[`${measure.name}_scenario`] = scenarioValue;
+          rowOut[`__formatted_${measure.name}_scenario`] =
+            scenarioValue !== null
+              ? formattersForMeasures[measure.name](scenarioValue)
+              : PERC_DIFF.CURRENT_VALUE_NO_DATA;
+
+          // Scenario delta absolute (scenario - main)
+          const scenarioDeltaAbs =
+            scenarioValue !== null && mainValue !== null
+              ? scenarioValue - mainValue
+              : null;
+          rowOut[`${measure.name}_scenario_delta`] = scenarioDeltaAbs;
+          rowOut[`__formatted_${measure.name}_scenario_delta`] =
+            scenarioDeltaAbs !== null
+              ? formattersForMeasures[measure.name](scenarioDeltaAbs)
+              : PERC_DIFF.PREV_VALUE_NO_DATA;
+
+          // Scenario delta percent ((scenario - main) / |main| * 100)
+          const scenarioDeltaPerc =
+            scenarioValue !== null && mainValue !== null && mainValue !== 0
+              ? (scenarioValue - mainValue) / Math.abs(mainValue)
+              : null;
+          rowOut[`${measure.name}_scenario_delta_perc`] = scenarioDeltaPerc;
+          rowOut[`__formatted_${measure.name}_scenario_delta_perc`] =
+            scenarioDeltaPerc !== null
+              ? formatMeasurePercentageDifference(scenarioDeltaPerc)
+              : PERC_DIFF.PREV_VALUE_NO_DATA;
         });
       }
 

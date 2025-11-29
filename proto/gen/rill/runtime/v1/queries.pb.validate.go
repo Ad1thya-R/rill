@@ -3351,6 +3351,8 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 
 	// no validation rules for Rows
 
+	// no validation rules for Scenario
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
 	}
@@ -7317,6 +7319,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 	}
 
 	// no validation rules for TimeDimension
+
+	// no validation rules for Scenario
 
 	if len(errors) > 0 {
 		return MetricsViewTimeSeriesRequestMultiError(errors)

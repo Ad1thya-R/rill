@@ -36,8 +36,14 @@ export const ComparisonDeltaPreviousSuffix = "_prev";
 export const ComparisonDeltaAbsoluteSuffix = "_delta";
 export const ComparisonDeltaRelativeSuffix = "_delta_perc";
 export const ComparisonPercentOfTotal = "_percent_of_total";
+
+// Scenario comparison suffix - used for scenario vs Main comparisons
+export const ScenarioSuffix = "_scenario";
+export const ScenarioDeltaSuffix = "_scenario_delta";
+export const ScenarioDeltaRelativeSuffix = "_scenario_delta_perc";
+
 export const MeasureModifierSuffixRegex =
-  /_prev|_delta(?:_perc)?|_percent_of_total/;
+  /_prev|_delta(?:_perc)?|_percent_of_total|_scenario(?:_delta(?:_perc)?)?/;
 
 export function mapExprToMeasureFilter(
   expr: V1Expression | undefined,

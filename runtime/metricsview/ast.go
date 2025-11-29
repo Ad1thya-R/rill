@@ -1372,17 +1372,31 @@ func (a *AST) sqlForTimeRange(timeDimExpr string, start, end time.Time) (string,
 	return where, args
 }
 
+// measureExpression returns the expression for a measure, taking into account scenario overrides.
+// If a scenario is specified in the query and the measure has a scenario_expression for that scenario,
+// the scenario expression is used instead of the default expression.
+func (a *AST) measureExpression(m *runtimev1.MetricsViewSpec_Measure) string {
+	if a.Query.Scenario != "" && m.ScenarioExpressions != nil {
+		if expr, ok := m.ScenarioExpressions[a.Query.Scenario]; ok {
+			return expr
+		}
+	}
+	return m.Expression
+}
+
 // sqlForMeasure builds a SQL expression for a measure, including its window if present.
 // It uses the provided n to resolve dimensions expressions for window partitions.
 func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode) (string, error) {
+	expr := a.measureExpression(m)
+
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
-		return m.Expression, nil
+		return expr, nil
 	}
 
 	// If partitioning is not enabled, ordering and framing doesn't matter
 	if !m.Window.Partition {
-		return fmt.Sprintf("%s OVER ()", m.Expression), nil
+		return fmt.Sprintf("%s OVER ()", expr), nil
 	}
 
 	// If partitioning is enabled, we partition by all dimensions that we don't order by.
@@ -1417,7 +1431,7 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode)
 
 	// Build the window expression
 	b := &strings.Builder{}
-	b.WriteString(m.Expression)
+	b.WriteString(expr)
 	b.WriteString(" OVER (")
 	if len(partitionFields) > 0 {
 		b.WriteString("PARTITION BY ")

@@ -32,6 +32,7 @@
     useExploreState,
   } from "../stores/dashboard-stores";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
+  import ScenarioPill from "../scenario-pill/ScenarioPill.svelte";
   import {
     CUSTOM_TIME_RANGE_ALIAS,
     deriveInterval,
@@ -121,6 +122,7 @@
 
   $: exploreSpec = $validSpecStore.data?.explore ?? {};
   $: metricsViewSpec = $validSpecStore.data?.metricsView ?? {};
+  $: scenarios = metricsViewSpec.scenarios ?? [];
 
   $: exploreState = useExploreState($exploreName);
   $: activeTimeZone = $exploreState?.selectedTimezone;
@@ -396,6 +398,9 @@
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
         />
+        {#if scenarios.length > 0}
+          <ScenarioPill exploreName={$exploreName} {scenarios} />
+        {/if}
       {/if}
 
       {#if !$rillTime && allTimeRangeInterval?.end?.isValid}

@@ -260,6 +260,20 @@ export class DashboardState extends Message<DashboardState> {
    */
   pivotColumnAllDimensions: PivotElement[] = [];
 
+  /**
+   * Whether scenario comparison mode is enabled
+   *
+   * @generated from field: optional bool show_scenario_comparison = 41;
+   */
+  showScenarioComparison?: boolean;
+
+  /**
+   * The selected scenario to compare against Main
+   *
+   * @generated from field: optional string selected_scenario = 42;
+   */
+  selectedScenario?: string;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -307,6 +321,8 @@ export class DashboardState extends Message<DashboardState> {
     { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
+    { no: 41, name: "show_scenario_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 42, name: "selected_scenario", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

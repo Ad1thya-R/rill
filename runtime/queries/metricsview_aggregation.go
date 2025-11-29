@@ -39,6 +39,7 @@ type MetricsViewAggregation struct {
 	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 	Rows                bool                                           `json:"rows,omitempty"`
+	Scenario            string                                         `json:"scenario,omitempty"`
 	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
@@ -429,6 +430,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 
 	qry.UseDisplayNames = export
 	qry.Rows = q.Rows
+	qry.Scenario = q.Scenario
 
 	return qry, nil
 }

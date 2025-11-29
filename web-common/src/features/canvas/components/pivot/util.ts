@@ -121,6 +121,10 @@ export function processPivot(
       enableComparison: false,
       searchText: "",
       isFlat: false,
+      enableScenarioComparison: false,
+      selectedScenario: undefined,
+      scenarioDeltaAbsolute: false,
+      scenarioDeltaPercent: false,
     };
   }
 
@@ -158,6 +162,11 @@ export function processPivot(
       timeZone: timeRange.timeZone || "UTC",
       timeDimension: metricsView?.timeDimension || "",
     },
+    // Canvas pivot doesn't support scenario comparison yet
+    enableScenarioComparison: false,
+    selectedScenario: undefined,
+    scenarioDeltaAbsolute: false,
+    scenarioDeltaPercent: false,
   };
 
   const currentKey = getPivotConfigKey(config);
@@ -200,6 +209,10 @@ export function processFlat(
       enableComparison: false,
       searchText: "",
       isFlat: true,
+      enableScenarioComparison: false,
+      selectedScenario: undefined,
+      scenarioDeltaAbsolute: false,
+      scenarioDeltaPercent: false,
     };
   }
 
@@ -244,6 +257,11 @@ export function processFlat(
       timeZone: timeRange.timeZone || "UTC",
       timeDimension: metricsView?.timeDimension || "",
     },
+    // Canvas pivot doesn't support scenario comparison yet
+    enableScenarioComparison: false,
+    selectedScenario: undefined,
+    scenarioDeltaAbsolute: false,
+    scenarioDeltaPercent: false,
   };
 
   const currentKey = getPivotConfigKey(config);

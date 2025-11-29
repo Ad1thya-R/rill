@@ -27,6 +27,12 @@ export const isTimeComparisonActive = (
   dashData: DashboardDataSources,
 ): boolean => timeControlsState(dashData).showTimeComparison === true;
 
+export const isScenarioComparisonActive = (
+  dashData: DashboardDataSources,
+): boolean =>
+  dashData.dashboard?.showScenarioComparison === true &&
+  !!dashData.dashboard?.selectedScenario;
+
 export const timeRangeSelectorState = (dashData: DashboardDataSources) =>
   timeRangeSelectionsSelector([
     dashData.validMetricsView,
@@ -73,6 +79,11 @@ export const timeRangeSelectors = {
    * Is the time comparison active?
    */
   isTimeComparisonActive,
+
+  /**
+   * Is the scenario comparison active?
+   */
+  isScenarioComparisonActive,
 
   /**
    * Selection options for the time range selector

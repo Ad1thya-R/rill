@@ -440,6 +440,8 @@ const metricsViewReducers = {
   setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.selectedComparisonDimension = dimensionName;
+      // Dimension comparison disables scenario mode
+      exploreState.showScenarioComparison = false;
       exploreState.tdd.pinIndex = getPinIndexForDimension(
         exploreState,
         dimensionName,
@@ -450,6 +452,34 @@ const metricsViewReducers = {
   disableAllComparisons(name: string) {
     updateMetricsExplorerByName(name, (exploreState) => {
       exploreState.selectedComparisonDimension = undefined;
+    });
+  },
+
+  toggleScenarioComparison(name: string, enabled: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.showScenarioComparison = enabled;
+      // Scenario mode disables dimension comparison
+      if (enabled) {
+        exploreState.selectedComparisonDimension = undefined;
+      }
+    });
+  },
+
+  setSelectedScenario(name: string, selectedScenario: string | undefined) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.selectedScenario = selectedScenario;
+    });
+  },
+
+  setScenarioDeltaAbsolute(name: string, enabled: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.scenarioDeltaAbsolute = enabled;
+    });
+  },
+
+  setScenarioDeltaPercent(name: string, enabled: boolean) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.scenarioDeltaPercent = enabled;
     });
   },
 
