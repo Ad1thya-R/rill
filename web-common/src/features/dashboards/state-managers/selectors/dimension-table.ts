@@ -57,6 +57,23 @@ export const virtualizedTableColumns =
         })
         .filter(Boolean) as number[];
       maxValues[m.name] = Math.max(...numericValues);
+
+      // Also compute max for scenario columns if scenario comparison is active
+      if (isScenarioComparisonActive(dashData)) {
+        const scenarioColumnName = `${m.name}_scenario`;
+        const scenarioNumericValues = tableRows
+          .map((row) => {
+            const value = row[scenarioColumnName];
+            return typeof value === "number" && isFinite(value)
+              ? Math.abs(value)
+              : null;
+          })
+          .filter(Boolean) as number[];
+        if (scenarioNumericValues.length > 0) {
+          // Use the same max as main value for consistency in bar scaling
+          maxValues[scenarioColumnName] = maxValues[m.name];
+        }
+      }
     });
 
     // Get scenario delta toggle states from dashboard

@@ -1,5 +1,6 @@
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import ScenarioIcon from "@rilldata/web-common/features/dashboards/dimension-table/ScenarioIcon.svelte";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -166,11 +167,11 @@ export function getComparisonProperties(
   } else if (measureName.includes("_scenario")) {
     // Scenario value column - use the measure's format
     return {
-      component: DeltaChange, // Use DeltaChange component for now; could be customized
+      component: ScenarioIcon, // Use Git branch icon for scenario column
       type: "INT",
       format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
       description: `Value under scenario: ${scenarioLabel || "Scenario"}`,
-      label: scenarioLabel || "Scenario",
+      // Use the component instead of a string label to get the icon in the header
     };
   }
   throw new Error(
@@ -405,6 +406,10 @@ export function prepareVirtualizedDimTableColumns(
       } else if (selectedMeasure !== undefined) {
         // Handle delta, delta_perc, percent_of_total, and scenario columns
         const comparison = getComparisonProperties(name, selectedMeasure, scenarioLabel);
+
+        // Check if this is a scenario value column (not delta) - these should have bars
+        const isScenarioValueColumn = name.endsWith("_scenario") && !name.includes("_delta");
+
         columnOut = {
           name,
           type: comparison.type,
@@ -415,6 +420,11 @@ export function prepareVirtualizedDimTableColumns(
           format: comparison.format,
           highlight,
           sorted,
+          // Add max for scenario value columns to show bars
+          ...(isScenarioValueColumn && {
+            max: maxValues[name] || 0,
+            isScenarioColumn: true, // Flag for green bar color
+          }),
         };
       }
       return columnOut;

@@ -526,9 +526,9 @@ export function createTimeDimensionDataStore(
           scenarioSpec?.label || scenarioSpec?.name || selectedScenario;
 
         // Pass scenario data if scenario comparison is enabled and we have scenario data
+        // Simplified condition: just check if scenario data exists and has items
+        // The chart uses the same data source and shows scenario, so if it's available, use it
         const hasScenarioData =
-          showScenarioComparison &&
-          selectedScenario &&
           timeSeries?.scenarioTimeSeriesData &&
           timeSeries.scenarioTimeSeriesData.length > 0;
 

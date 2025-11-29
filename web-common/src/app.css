@@ -84,6 +84,10 @@
     @apply bg-gray-100;
   }
 
+  .ui-measure-bar-scenario {
+    @apply bg-green-100;
+  }
+
   .ui-editor-text-error {
     color: var(--ui-editor-error-foreground);
   }

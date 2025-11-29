@@ -37,4 +37,6 @@ export interface VirtualizedTableColumns {
   // Leave undefined if the table is not sorted by this column.
   sorted?: SortDirection;
   format?: string;
+  // Flag for scenario columns that should use green bars
+  isScenarioColumn?: boolean;
 }

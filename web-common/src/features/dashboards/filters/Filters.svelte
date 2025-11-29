@@ -397,6 +397,7 @@
           {selectedTimeRange}
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
+          scenarioComparisonActive={!!$exploreState?.showScenarioComparison}
         />
         {#if scenarios.length > 0}
           <ScenarioPill exploreName={$exploreName} {scenarios} />

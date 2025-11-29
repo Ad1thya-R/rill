@@ -22,6 +22,7 @@
   export let showTimeComparison: boolean;
   export let minTimeGrain: V1TimeGrain | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
+  export let scenarioComparisonActive: boolean = false;
 
   const ctx = getStateManagers();
   const {
@@ -68,12 +69,17 @@
   }
 
   $: disabled =
-    selectedTimeRange?.name === TimeRangePreset.ALL_TIME || undefined;
+    selectedTimeRange?.name === TimeRangePreset.ALL_TIME ||
+    scenarioComparisonActive ||
+    undefined;
+  $: disabledReason = scenarioComparisonActive
+    ? "Time comparison is not available when scenario comparison is active"
+    : "Comparison not available when viewing all time range";
 </script>
 
 <div
   class="wrapper"
-  title={disabled && "Comparison not available when viewing all time range"}
+  title={disabled && disabledReason}
 >
   <button
     {disabled}

@@ -33,6 +33,7 @@
   export let excludeMode = false;
   export let positionStatic = false;
   export let label: string | undefined = undefined;
+  export let isScenarioColumn = false;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -97,11 +98,13 @@
       : !rowSelected
     : false;
 
-  $: barColor = excluded
-    ? "ui-measure-bar-excluded"
-    : rowSelected
-      ? "ui-measure-bar-included-selected"
-      : "ui-measure-bar-included";
+  $: barColor = isScenarioColumn
+    ? "ui-measure-bar-scenario"
+    : excluded
+      ? "ui-measure-bar-excluded"
+      : rowSelected
+        ? "ui-measure-bar-included-selected"
+        : "ui-measure-bar-included";
 
   $: tooltipValue =
     value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
