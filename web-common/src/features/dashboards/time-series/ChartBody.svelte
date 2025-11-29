@@ -12,6 +12,7 @@
     MainLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { splitDataAtForecastCutoff } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import { writable } from "svelte/store";
 
@@ -27,6 +28,11 @@
   export let yAccessor: string;
   export let scrubStart;
   export let scrubEnd;
+  /** Optional forecast cutoff date - data after this date renders with dashed lines */
+  export let forecastCutoffDate: Date | null = null;
+
+  /** Dash pattern for forecast lines (dotted/dashed style) */
+  const FORECAST_DASH_PATTERN = "4,4";
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
@@ -85,10 +91,18 @@
   {#if dimensionData?.length}
     {#each dimensionData as d}
       {@const isHighlighted = d?.value === dimensionValue}
+      {@const dimSplitData = forecastCutoffDate
+        ? splitDataAtForecastCutoff(
+            d?.data || [],
+            xAccessor,
+            forecastCutoffDate,
+          )
+        : { historical: d?.data || [], forecast: [] }}
       <g
         class="transition-opacity"
         class:opacity-0={isDimValueHiglighted && !isHighlighted}
       >
+        <!-- Historical data (solid line) -->
         <ChunkedLine
           lineWidth={isHighlighted ? 2 : 1.5}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
@@ -97,10 +111,26 @@
             ? 0
             : 200}
           lineColor={d?.color}
-          data={d?.data || []}
+          data={dimSplitData.historical}
           {xAccessor}
           {yAccessor}
         />
+        <!-- Forecast data (dashed line) -->
+        {#if dimSplitData.forecast.length > 0}
+          <ChunkedLine
+            lineWidth={isHighlighted ? 2 : 1.5}
+            delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+            duration={hasSubrangeSelected ||
+            $timeRangeKey !== $previousTimeRangeKey
+              ? 0
+              : 200}
+            lineColor={d?.color}
+            data={dimSplitData.forecast}
+            {xAccessor}
+            {yAccessor}
+            strokeDasharray={FORECAST_DASH_PATTERN}
+          />
+        {/if}
       </g>
       {#if isHighlighted && showComparison}
         <g class="transition-opacity">
@@ -120,6 +150,9 @@
       {/if}
     {/each}
   {:else}
+    {@const splitData = forecastCutoffDate
+      ? splitDataAtForecastCutoff(data, xAccessor, forecastCutoffDate)
+      : { historical: data, forecast: [] }}
     {#if showComparison}
       <g
         class="transition-opacity"
@@ -140,6 +173,7 @@
         />
       </g>
     {/if}
+    <!-- Historical data (solid line with area gradient) -->
     <ChunkedLine
       lineColor={mainLineColor}
       {areaGradientColors}
@@ -147,10 +181,24 @@
       duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
         ? 0
         : 200}
-      {data}
+      data={splitData.historical}
       {xAccessor}
       {yAccessor}
     />
+    <!-- Forecast data (dashed line, no area) -->
+    {#if splitData.forecast.length > 0}
+      <ChunkedLine
+        lineColor={mainLineColor}
+        delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+        duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
+          ? 0
+          : 200}
+        data={splitData.forecast}
+        {xAccessor}
+        {yAccessor}
+        strokeDasharray={FORECAST_DASH_PATTERN}
+      />
+    {/if}
     {#if hasSubrangeSelected}
       <ClippedChunkedLine
         start={Math.min(scrubStart, scrubEnd)}

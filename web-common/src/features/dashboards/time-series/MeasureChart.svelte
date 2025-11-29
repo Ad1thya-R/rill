@@ -79,6 +79,8 @@
   export let yAccessor = "value";
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let validPercTotal: number | null = null;
+  /** Optional forecast cutoff date - data after this date renders with dashed lines */
+  export let forecastCutoffDate: Date | null = null;
 
   // control point for scrub functionality.
   export let isScrubbing = false;
@@ -338,6 +340,7 @@
         {xMin}
         {yAccessor}
         {yExtentMax}
+        {forecastCutoffDate}
       />
       <line
         class="stroke-theme-200"

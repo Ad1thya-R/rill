@@ -4662,6 +4662,10 @@ definitions:
       definedInMetricsView:
         type: boolean
         description: When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
+      forecastCutoffDate:
+        type: string
+        format: date-time
+        description: Optional forecast cutoff date. Data points after this date will be rendered with dashed lines in charts.
   v1ExploreState:
     type: object
     properties:

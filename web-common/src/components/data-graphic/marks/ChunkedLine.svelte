@@ -43,6 +43,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   export let lineOpacity = 1;
   export let lineWidth = 1;
+  /** Optional stroke dash pattern for dashed/dotted lines (e.g., "5,5" for dashed, "2,2" for dotted) */
+  export let strokeDasharray: string | null = null;
 
   $: area = areaGradientColors !== null;
 
@@ -134,6 +136,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
         opacity={lineOpacity}
         stroke-width={lineWidth}
         stroke={lineColor}
+        stroke-dasharray={strokeDasharray}
         d={dt}
         id="segments-line"
         fill="none"

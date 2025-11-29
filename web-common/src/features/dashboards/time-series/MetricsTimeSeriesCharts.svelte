@@ -118,6 +118,12 @@
   $: showComparison = Boolean(showTimeComparison);
   $: tddChartType = $exploreState?.tdd?.chartType;
 
+  // Forecast cutoff date from ExploreSpec - data after this will render with dashed lines
+  $: forecastCutoffDateStr = $validSpecStore.data?.explore?.forecastCutoffDate;
+  $: forecastCutoffDate = forecastCutoffDateStr
+    ? new Date(forecastCutoffDateStr)
+    : null;
+
   $: timeString = selectedTimeRange?.name;
 
   $: activeTimeGrain = selectedTimeRange?.interval ?? minTimeGrain;
@@ -446,6 +452,10 @@
         {@const isValidPercTotal = measure.name
           ? $isMeasureValidPercentOfTotal(measure.name)
           : false}
+        {@const measureDimensionData =
+          comparisonDimension && dimensionData?.length > 0
+            ? dimensionData
+            : undefined}
 
         <div class="flex flex-row gap-x-4">
           <MeasureBigNumber
@@ -460,6 +470,8 @@
               : $timeSeriesDataStore?.isFetching
                 ? EntityStatus.Running
                 : EntityStatus.Idle}
+            dimensionComparisonData={measureDimensionData}
+            yAccessor={measure.name}
           />
 
           {#if hasTimeseriesError}
@@ -551,6 +563,7 @@
               xMin={startValue}
               xMax={endValue}
               {showComparison}
+              {forecastCutoffDate}
               validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
                 ? bigNum
                 : null}

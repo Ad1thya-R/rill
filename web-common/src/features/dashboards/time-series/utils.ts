@@ -273,3 +273,44 @@ export function adjustTimeInterval(
   const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
   return { start: adjustedStart, end: adjustedEnd };
 }
+
+/**
+ * Split time series data into historical and forecast segments at a cutoff date.
+ * Historical data includes points up to and including the cutoff.
+ * Forecast data includes points after the cutoff, with the last historical point
+ * duplicated at the start to ensure visual continuity.
+ */
+export function splitDataAtForecastCutoff<T extends Record<string, unknown>>(
+  data: T[],
+  xAccessor: string,
+  forecastCutoffDate: Date,
+): { historical: T[]; forecast: T[] } {
+  if (!data || data.length === 0 || !forecastCutoffDate) {
+    return { historical: data || [], forecast: [] };
+  }
+
+  const cutoffTime = forecastCutoffDate.getTime();
+  const historical: T[] = [];
+  const forecast: T[] = [];
+
+  let lastHistoricalPoint: T | null = null;
+
+  for (const point of data) {
+    const pointTime = new Date(point[xAccessor] as string | Date).getTime();
+
+    if (pointTime <= cutoffTime) {
+      historical.push(point);
+      lastHistoricalPoint = point;
+    } else {
+      forecast.push(point);
+    }
+  }
+
+  // Add the last historical point at the beginning of forecast
+  // to ensure visual continuity (no gap) at the cutoff
+  if (lastHistoricalPoint && forecast.length > 0) {
+    forecast.unshift(lastHistoricalPoint);
+  }
+
+  return { historical, forecast };
+}

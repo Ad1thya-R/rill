@@ -20,6 +20,8 @@
     type FlyParams,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
+  import DimensionComparisonValues from "./DimensionComparisonValues.svelte";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
   export let measure: MetricsViewSpecMeasure;
   export let value: number | null;
@@ -29,6 +31,14 @@
   export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+
+  // Dimension comparison mode props
+  export let dimensionComparisonData: DimensionDataItem[] | undefined =
+    undefined;
+  export let yAccessor: string = "value";
+
+  $: isInDimensionComparisonMode =
+    dimensionComparisonData && dimensionComparisonData.length > 0;
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null
@@ -154,7 +164,14 @@
       on:focus={handleFocus}
       tabindex="0"
     >
-      {#if value !== null && value !== undefined && status === EntityStatus.Idle}
+      {#if isInDimensionComparisonMode && status === EntityStatus.Idle}
+        <!-- Dimension comparison mode: show stacked values for each dimension -->
+        <DimensionComparisonValues
+          {measure}
+          dimensionData={dimensionComparisonData}
+          {yAccessor}
+        />
+      {:else if value !== null && value !== undefined && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
           {measureValueFormatter(output)}
         </WithTween>

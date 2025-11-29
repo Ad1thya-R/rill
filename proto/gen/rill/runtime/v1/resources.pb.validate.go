@@ -4874,6 +4874,39 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInMetricsView
 
+	if m.ForecastCutoffDate != nil {
+
+		if all {
+			switch v := interface{}(m.GetForecastCutoffDate()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  "ForecastCutoffDate",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  "ForecastCutoffDate",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetForecastCutoffDate()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreSpecValidationError{
+					field:  "ForecastCutoffDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}

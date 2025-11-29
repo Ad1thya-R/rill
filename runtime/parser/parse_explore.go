@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,6 +27,7 @@ type ExploreYAML struct {
 	TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
 	LockTimeZone         bool                   `yaml:"lock_time_zone"`
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
+	ForecastCutoffDate   string                 `yaml:"forecast_cutoff_date"` // ISO 8601 date string for forecast cutoff
 	Defaults             *struct {
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
@@ -291,6 +293,19 @@ func (p *Parser) parseExplore(node *Node) error {
 	r.ExploreSpec.SecurityRules = rules
 	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
 	r.ExploreSpec.AllowCustomTimeRange = allowCustomTimeRange
+
+	// Parse forecast cutoff date if provided
+	if tmp.ForecastCutoffDate != "" {
+		forecastCutoff, err := time.Parse(time.RFC3339, tmp.ForecastCutoffDate)
+		if err != nil {
+			// Try parsing as date-only format
+			forecastCutoff, err = time.Parse("2006-01-02", tmp.ForecastCutoffDate)
+			if err != nil {
+				return fmt.Errorf("invalid forecast_cutoff_date %q: expected RFC3339 or YYYY-MM-DD format", tmp.ForecastCutoffDate)
+			}
+		}
+		r.ExploreSpec.ForecastCutoffDate = timestamppb.New(forecastCutoff)
+	}
 
 	return nil
 }

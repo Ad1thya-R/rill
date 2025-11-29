@@ -927,6 +927,8 @@ These are not currently parsed from YAML, but will be derived from the parent me
   allowCustomTimeRange?: boolean;
   /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
+  /** Optional forecast cutoff date. Data points after this date will be rendered with dashed lines in charts. */
+  forecastCutoffDate?: string;
 }
 
 export interface V1ExploreState {
