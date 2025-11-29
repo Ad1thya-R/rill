@@ -36,9 +36,13 @@
   export let dimensionComparisonData: DimensionDataItem[] | undefined =
     undefined;
   export let yAccessor: string = "value";
+  /** When true, shows individual dimension values in big number during comparison mode */
+  export let showDimensionValues: boolean = false;
 
   $: isInDimensionComparisonMode =
-    dimensionComparisonData && dimensionComparisonData.length > 0;
+    showDimensionValues &&
+    dimensionComparisonData &&
+    dimensionComparisonData.length > 0;
 
   $: comparisonPercChange =
     comparisonValue && value !== undefined && value !== null

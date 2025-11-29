@@ -4666,6 +4666,9 @@ definitions:
         type: string
         format: date-time
         description: Optional forecast cutoff date. Data points after this date will be rendered with dashed lines in charts.
+      showDimensionValues:
+        type: boolean
+        description: When true, shows individual dimension values in the big number display during dimension comparison mode.
   v1ExploreState:
     type: object
     properties:

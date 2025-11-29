@@ -447,6 +447,8 @@ message ExploreSpec {
   bool defined_in_metrics_view = 21;
   // Optional forecast cutoff date. Data points after this date will be rendered with dashed lines in charts.
   optional google.protobuf.Timestamp forecast_cutoff_date = 22;
+  // When true, shows individual dimension values in the big number display during dimension comparison mode.
+  bool show_dimension_values = 23;
 }
 
 message ExploreState {

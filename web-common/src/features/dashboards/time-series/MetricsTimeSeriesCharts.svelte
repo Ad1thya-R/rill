@@ -124,6 +124,10 @@
     ? new Date(forecastCutoffDateStr)
     : null;
 
+  // Show dimension values in big number during comparison mode
+  $: showDimensionValues =
+    $validSpecStore.data?.explore?.showDimensionValues ?? false;
+
   $: timeString = selectedTimeRange?.name;
 
   $: activeTimeGrain = selectedTimeRange?.interval ?? minTimeGrain;
@@ -472,6 +476,7 @@
                 : EntityStatus.Idle}
             dimensionComparisonData={measureDimensionData}
             yAccessor={measure.name}
+            {showDimensionValues}
           />
 
           {#if hasTimeseriesError}

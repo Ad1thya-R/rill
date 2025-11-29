@@ -929,6 +929,8 @@ These are not currently parsed from YAML, but will be derived from the parent me
   definedInMetricsView?: boolean;
   /** Optional forecast cutoff date. Data points after this date will be rendered with dashed lines in charts. */
   forecastCutoffDate?: string;
+  /** When true, shows individual dimension values in the big number display during dimension comparison mode. */
+  showDimensionValues?: boolean;
 }
 
 export interface V1ExploreState {

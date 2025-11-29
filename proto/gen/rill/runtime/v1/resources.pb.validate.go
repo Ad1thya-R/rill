@@ -4874,6 +4874,8 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInMetricsView
 
+	// no validation rules for ShowDimensionValues
+
 	if m.ForecastCutoffDate != nil {
 
 		if all {

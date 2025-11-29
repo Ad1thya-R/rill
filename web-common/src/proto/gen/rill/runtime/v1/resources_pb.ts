@@ -2641,6 +2641,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   forecastCutoffDate?: Timestamp;
 
+  /**
+   * When true, shows individual dimension values in the big number display during dimension comparison mode.
+   *
+   * @generated from field: bool show_dimension_values = 23;
+   */
+  showDimensionValues = false;
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2668,6 +2675,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 22, name: "forecast_cutoff_date", kind: "message", T: Timestamp, opt: true },
+    { no: 23, name: "show_dimension_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {

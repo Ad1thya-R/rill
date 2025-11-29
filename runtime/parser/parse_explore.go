@@ -27,7 +27,8 @@ type ExploreYAML struct {
 	TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
 	LockTimeZone         bool                   `yaml:"lock_time_zone"`
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
-	ForecastCutoffDate   string                 `yaml:"forecast_cutoff_date"` // ISO 8601 date string for forecast cutoff
+	ForecastCutoffDate   string                 `yaml:"forecast_cutoff_date"`   // ISO 8601 date string for forecast cutoff
+	ShowDimensionValues  bool                   `yaml:"show_dimension_values"`  // Show individual dimension values in big number during comparison
 	Defaults             *struct {
 		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
 		Measures            *FieldSelectorYAML `yaml:"measures"`
@@ -306,6 +307,9 @@ func (p *Parser) parseExplore(node *Node) error {
 		}
 		r.ExploreSpec.ForecastCutoffDate = timestamppb.New(forecastCutoff)
 	}
+
+	// Set show_dimension_values flag
+	r.ExploreSpec.ShowDimensionValues = tmp.ShowDimensionValues
 
 	return nil
 }
