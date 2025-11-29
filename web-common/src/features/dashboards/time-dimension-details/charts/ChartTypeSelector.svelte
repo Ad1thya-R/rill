@@ -10,8 +10,12 @@
   export let exploreName: string;
   export let chartType: TDDChart;
   export let hasComparison: boolean;
+  export let hasScenarioComparison: boolean = false;
 
+  // Charts that require time/dimension comparison
   const comparisonCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
+  // Charts that are incompatible with scenario comparison (bar chart shows bars, conflicts with scenario bars)
+  const scenarioIncompatibleCharts = [TDDChart.GROUPED_BAR];
 
   const chartTypeTabs = [
     {
@@ -41,8 +45,23 @@
     metricsExplorerStore.setTDDChartType(exploreName, type);
   }
 
+  function getDisabledReason(id: TDDChart): string | null {
+    if (!hasComparison && comparisonCharts.includes(id)) {
+      return `Add comparison values to use this chart`;
+    }
+    if (hasScenarioComparison && scenarioIncompatibleCharts.includes(id)) {
+      return `Bar chart is not available when scenario comparison is enabled`;
+    }
+    return null;
+  }
+
   // switch to default if current selected chart is not available
   $: if (!hasComparison && comparisonCharts.includes(chartType)) {
+    metricsExplorerStore.setTDDChartType(exploreName, TDDChart.DEFAULT);
+  }
+
+  // switch to default if scenario comparison is enabled and bar chart is selected
+  $: if (hasScenarioComparison && scenarioIncompatibleCharts.includes(chartType)) {
     metricsExplorerStore.setTDDChartType(exploreName, TDDChart.DEFAULT);
   }
 </script>
@@ -50,7 +69,8 @@
 <div class="chart-type-selector">
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
-    {@const disabled = !hasComparison && comparisonCharts.includes(id)}
+    {@const disabledReason = getDisabledReason(id)}
+    {@const disabled = disabledReason !== null}
     <div class:bg-theme-100={active} class="chart-icon-wrapper">
       <IconButton
         {disabled}
@@ -68,7 +88,7 @@
           size="20px"
         />
         <svelte:fragment slot="tooltip-content">
-          {disabled ? `Add comparison values to use ${label} chart` : label}
+          {disabledReason ? disabledReason : label}
         </svelte:fragment>
       </IconButton>
     </div>

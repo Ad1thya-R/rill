@@ -169,6 +169,42 @@
           }),
         );
 
+  // Scenario bar color - green to match the chart visualization
+  $: scenarioBarColor = "var(--color-green-100)";
+
+  // Scenario column width (uses DEFAULT_COLUMN_WIDTH for bar display)
+  $: scenarioColumnWidth = DEFAULT_COLUMN_WIDTH - MEASURES_PADDING;
+
+  // Calculate scenario bar lengths based on max values
+  $: scenarioBarLengths = Object.fromEntries(
+    Object.entries(scenarioValues).map(([name, value]) => {
+      const maxValue = maxValues[name];
+      if (!value || !maxValue || maxValue <= 0) return [name, 0];
+      // Use scenarioColumnWidth for bar calculation
+      return [name, (Math.abs(value) / maxValue) * scenarioColumnWidth];
+    }),
+  );
+
+  $: scenarioMeasureCellBarLengths = Object.fromEntries(
+    Object.entries(scenarioBarLengths).map(([name, length]) => [
+      name,
+      clamp(0, length, scenarioColumnWidth),
+    ]),
+  );
+
+  // Scenario gradient map - always use multi-measure style (bars within the scenario column)
+  $: scenarioGradientMap = Object.fromEntries(
+    leaderboardMeasureNames.map((name) => {
+      const length = scenarioMeasureCellBarLengths[name];
+      return [
+        name,
+        length
+          ? `linear-gradient(to right, ${scenarioBarColor} ${length}px, transparent ${length}px)`
+          : undefined,
+      ];
+    }),
+  );
+
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
@@ -417,7 +453,7 @@
       <td
         role="button"
         tabindex="0"
-        data-scenario-cell
+        data-scenario-value-cell
         on:click={modified({
           shift: () =>
             shiftClickHandler(scenarioValues[measureName]?.toString() || ""),
@@ -434,14 +470,14 @@
             cellInspectorStore.updateValue(value);
           }
         }}
-        title="[{scenarioLabel || 'Scenario'}] {measureName}"
+        style:background={scenarioGradientMap?.[measureName]}
+        title="{scenarioLabel || 'Scenario'}"
       >
         <FormattedDataType
           type="INTEGER"
           value={scenarioValues[measureName]
             ? formatters[measureName]?.(scenarioValues[measureName])
             : null}
-          color="text-green-600"
         />
       </td>
     {/if}
@@ -543,11 +579,16 @@
 
   tr:hover td[data-dimension-cell],
   tr:hover td[data-comparison-cell],
-  tr:hover td[data-scenario-cell] {
+  tr:hover td[data-scenario-cell],
+  tr:hover td[data-scenario-value-cell] {
     @apply bg-gray-100;
   }
 
   td[data-scenario-cell] {
+    @apply bg-surface px-1 truncate;
+  }
+
+  td[data-scenario-value-cell] {
     @apply bg-surface px-1 truncate;
   }
 

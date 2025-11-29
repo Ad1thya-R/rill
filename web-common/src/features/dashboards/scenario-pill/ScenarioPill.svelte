@@ -6,6 +6,7 @@
   import type { MetricsViewSpecScenario } from "@rilldata/web-common/runtime-client";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { GitBranch } from "lucide-svelte";
 
   export let exploreName: string;
   export let scenarios: MetricsViewSpecScenario[];
@@ -69,7 +70,7 @@
 </script>
 
 <div class="wrapper">
-  <button class="flex gap-x-1.5 cursor-pointer" on:click={toggleComparison}>
+  <button class="toggle-button" on:click={toggleComparison}>
     <div class="pointer-events-none flex items-center gap-x-1.5">
       <Switch
         checked={showScenarioComparison ?? false}
@@ -77,6 +78,7 @@
         small
         theme
       />
+      <GitBranch size={14} />
       <Label class="font-normal text-xs cursor-pointer" for="scenario-comparing">
         Scenario
       </Label>
@@ -92,13 +94,15 @@
         {...builder}
         use:builder.action
       >
-        {#if !showScenarioComparison}
-          <span class="text-gray-400 truncate">no scenario selected</span>
-        {:else}
-          <span class="truncate">{currentLabel}</span>
-        {/if}
-        <span class="transition-transform" class:-rotate-180={open}>
-          <CaretDownIcon size="10px" />
+        <div class="flex items-center gap-x-2" class:opacity-50={!showScenarioComparison}>
+          {#if !showScenarioComparison}
+            <span class="truncate">no scenario selected</span>
+          {:else}
+            <b class="truncate">{currentLabel}</b>
+          {/if}
+        </div>
+        <span class="flex-none transition-transform" class:-rotate-180={open} class:opacity-50={!showScenarioComparison}>
+          <CaretDownIcon />
         </span>
       </button>
     </DropdownMenu.Trigger>
@@ -132,44 +136,34 @@
 
 <style lang="postcss">
   .wrapper {
-    @apply flex items-center w-fit;
+    @apply flex w-fit;
     @apply h-7 rounded-full;
     @apply overflow-hidden select-none;
   }
 
-  :global(.wrapper > button) {
-    @apply border;
-  }
-
-  :global(.wrapper > button:not(:first-child)) {
-    @apply -ml-[1px];
-  }
-
-  :global(.wrapper > button) {
+  .toggle-button {
+    @apply flex gap-x-1.5 cursor-pointer;
     @apply border;
     @apply px-2 flex items-center justify-center bg-surface;
-  }
-
-  :global(.wrapper > button:first-child) {
     @apply pl-2.5 rounded-l-full;
   }
 
-  :global(.wrapper > button:last-child) {
-    @apply pr-2.5 rounded-r-full;
-  }
-
-  :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer;
+  .toggle-button:hover {
+    @apply bg-gray-50;
   }
 
   .scenario-select {
-    @apply flex items-center gap-x-1 h-full;
-    @apply px-2 text-xs font-medium;
-    @apply border border-gray-200 bg-surface;
-    @apply hover:bg-gray-50 cursor-pointer;
+    @apply flex items-center gap-x-1;
+    @apply border -ml-[1px];
+    @apply px-2 pr-2.5 rounded-r-full bg-surface;
+    @apply cursor-pointer;
+  }
+
+  .scenario-select:hover {
+    @apply bg-gray-50;
   }
 
   .scenario-select.active {
-    @apply bg-gray-50 border-gray-400;
+    @apply bg-gray-50 border-gray-400 z-50;
   }
 </style>

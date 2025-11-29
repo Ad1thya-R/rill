@@ -525,12 +525,12 @@ export function createTimeDimensionDataStore(
         const scenarioLabel =
           scenarioSpec?.label || scenarioSpec?.name || selectedScenario;
 
-        // Check if measure has scenario expression for selected scenario
-        const measureHasScenarioExpression =
+        // Pass scenario data if scenario comparison is enabled and we have scenario data
+        const hasScenarioData =
           showScenarioComparison &&
           selectedScenario &&
-          measure?.scenarioExpressions &&
-          selectedScenario in measure.scenarioExpressions;
+          timeSeries?.scenarioTimeSeriesData &&
+          timeSeries.scenarioTimeSeriesData.length > 0;
 
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
@@ -541,11 +541,9 @@ export function createTimeDimensionDataStore(
           measure,
           comparing === "time",
           isAllTime,
-          // Pass scenario data if measure has scenario expression
-          measureHasScenarioExpression
-            ? timeSeries?.scenarioTimeSeriesData
-            : undefined,
-          measureHasScenarioExpression && timeSeries?.scenarioTotal
+          // Pass scenario data if available
+          hasScenarioData ? timeSeries?.scenarioTimeSeriesData : undefined,
+          hasScenarioData && timeSeries?.scenarioTotal
             ? (timeSeries?.scenarioTotal[measureName] as number)
             : undefined,
           scenarioLabel,

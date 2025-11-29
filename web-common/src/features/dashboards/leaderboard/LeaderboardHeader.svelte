@@ -5,6 +5,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { fly } from "svelte/transition";
+  import { GitBranch } from "lucide-svelte";
   import DeltaChange from "../dimension-table/DeltaChange.svelte";
   import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
   import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
@@ -227,12 +228,12 @@
       {/if}
 
       {#if showScenarioComparison}
-        <th data-scenario-header>
+        <th data-scenario-value-header>
           <span
-            class="scenario-header text-xs text-green-600 truncate"
-            title="[{scenarioLabel || 'Scenario'}] {measureLabel(measureName)}"
+            class="scenario-header flex items-center justify-end gap-1"
+            title="{scenarioLabel || 'Scenario'}"
           >
-            [{scenarioLabel || 'Scenario'}]
+            <GitBranch size={12} class="flex-shrink-0" />
           </span>
         </th>
       {/if}
@@ -277,12 +278,16 @@
     @apply justify-end;
   }
 
-  th[data-scenario-header] {
+  th[data-scenario-value-header] {
+    @apply px-2;
+  }
+
+  th[data-scenario-delta-header],
+  th[data-scenario-delta-percent-header] {
     @apply px-1;
   }
 
   .scenario-header {
-    @apply block text-right whitespace-nowrap overflow-hidden;
-    max-width: 60px;
+    @apply text-right whitespace-nowrap overflow-hidden;
   }
 </style>

@@ -373,6 +373,7 @@
         hasComparison={Boolean(
           showComparison || includedValuesForDimension.length,
         )}
+        hasScenarioComparison={showScenarioComparison ?? false}
         {exploreName}
         chartType={tddChartType}
       />

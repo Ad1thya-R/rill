@@ -10,7 +10,7 @@
   import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import { COMPARISON_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
 
   export let metricsViewName: string;
   export let whereFilter: V1Expression;
@@ -80,10 +80,13 @@
   $: scenarioDeltaAbsolute = $dashboardStore?.scenarioDeltaAbsolute ?? false;
   $: scenarioDeltaPercent = $dashboardStore?.scenarioDeltaPercent ?? false;
 
-  // Calculate number of scenario columns (value + optional deltas)
-  $: scenarioColumnCount = showScenarioComparison
-    ? 1 + (scenarioDeltaAbsolute ? 1 : 0) + (scenarioDeltaPercent ? 1 : 0)
+  // Calculate number of scenario delta columns (excluding the value column which is wider)
+  $: scenarioDeltaColumnCount = showScenarioComparison
+    ? (scenarioDeltaAbsolute ? 1 : 0) + (scenarioDeltaPercent ? 1 : 0)
     : 0;
+
+  // Scenario value column uses DEFAULT_COLUMN_WIDTH for proper bar display
+  $: scenarioValueColumnWidth = showScenarioComparison ? DEFAULT_COLUMN_WIDTH : 0;
 
   $: tableWidth =
     dimensionColumnWidth +
@@ -93,7 +96,8 @@
       : showPercentOfTotal
         ? COMPARISON_COLUMN_WIDTH
         : 0) +
-    scenarioColumnCount * COMPARISON_COLUMN_WIDTH;
+    scenarioValueColumnWidth +
+    scenarioDeltaColumnCount * COMPARISON_COLUMN_WIDTH;
 </script>
 
 <div class="flex flex-col overflow-hidden size-full" aria-label="Leaderboards">
